@@ -23,7 +23,7 @@ class RuleSet:
     def __init__(self, rules: List[Rule]):
         self.rules = rules
 
-    def apply(self, ecosystem: Ecosystem):
+    def apply(self, ecosystem: "Ecosystem"):
         for rule in self.rules:
             if rule.condition(ecosystem):
                 rule.action(ecosystem)
@@ -40,7 +40,7 @@ def which_month(n: Union[int, List[int]]):
         Callable[[Ecosystem], bool]: A function that takes an Ecosystem instance and returns True if the current month matches `n`.
     """
 
-    def condition(ecosystem: Ecosystem) -> bool:
+    def condition(ecosystem: "Ecosystem") -> bool:
         current_month = ecosystem.timer.get_month()
         if isinstance(n, int):
             return current_month == n
@@ -52,7 +52,7 @@ def which_month(n: Union[int, List[int]]):
     return condition
 
 
-def action_grow_older(ecosystem: Ecosystem):
+def action_grow_older(ecosystem: "Ecosystem"):
     for row in range(ecosystem.height):
         for col in range(ecosystem.width):
             for age in range(7, 0, -1):
@@ -83,7 +83,7 @@ def action_grow_older(ecosystem: Ecosystem):
     ecosystem.debug(1)
 
 
-def action_spawn_and_die(ecosystem: Ecosystem):
+def action_spawn_and_die(ecosystem: "Ecosystem"):
     K = 48
     for row in range(ecosystem.height):
         for col in range(ecosystem.width):
@@ -123,7 +123,7 @@ def action_spawn_and_die(ecosystem: Ecosystem):
     ecosystem.debug(2)
 
 
-def action_predation(ecosystem: Ecosystem):
+def action_predation(ecosystem: "Ecosystem"):
     for row in range(ecosystem.height):
         for col in range(ecosystem.width):
             ecosystem.prey_world[row][col] = PreySpecies(
@@ -164,7 +164,7 @@ rule_predation = Rule(
 )
 
 
-def action_predated(ecosystem: Ecosystem):
+def action_predated(ecosystem: "Ecosystem"):
     for row in range(ecosystem.height):
         for col in range(ecosystem.width):
             ecosystem.lamprey_world[row][col][5][0] = int(
@@ -201,7 +201,7 @@ rule_predated = Rule(
 
 
 # Rule 6: every month, lampreys may die
-def action_death(ecosystem: Ecosystem):
+def action_death(ecosystem: "Ecosystem"):
     for row in range(ecosystem.height):
         for col in range(ecosystem.width):
             for age in range(7, 0, -1):
@@ -228,7 +228,7 @@ rule_death = Rule(which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), action_d
 
 
 # Rule 7: every month, the prey world reproduces and dies
-def action_prey_reproduce(ecosystem: Ecosystem):
+def action_prey_reproduce(ecosystem: "Ecosystem"):
     for row in range(ecosystem.height):
         for col in range(ecosystem.width):
             ecosystem.prey_world[row][col].born()
@@ -241,7 +241,7 @@ rule_prey_reproduce = Rule(
 )
 
 
-def action_predator_reproduce(ecosystem: Ecosystem):
+def action_predator_reproduce(ecosystem: "Ecosystem"):
     for row in range(ecosystem.height):
         for col in range(ecosystem.width):
             ecosystem.predator_world[row][col].born()
@@ -254,7 +254,7 @@ rule_predator_reproduce = Rule(
 )
 
 
-def action_migrate(ecosystem: Ecosystem):
+def action_migrate(ecosystem: "Ecosystem"):
     ecosystem.prey_world.migrate()
     ecosystem.predator_world.migrate()
     ecosystem.debug(9)
