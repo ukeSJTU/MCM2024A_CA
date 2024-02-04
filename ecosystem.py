@@ -18,7 +18,7 @@ import seaborn as sns
 
 from utils import Timer
 from species import LampreySpecies, PreySpecies, PredatorSpecies
-from world import LampreyWorld, PreyWorld, PredatorWorld
+from world import LampreyWorld, PreyWorld, PredatorWorld, Terrain
 
 # from rules import rulesets
 import rules
@@ -32,12 +32,15 @@ class Ecosystem:
         lamprey_world: LampreyWorld,
         prey_world: PreyWorld,
         predator_world: PredatorWorld,
+        terrain: Terrain,
         output_dir: Path = Path("./output") / str(int(time.time())),
         timer: Timer = Timer(2000, 1),
     ):
         self.lamprey_world = lamprey_world
         self.prey_world = prey_world
         self.predator_world = predator_world
+        self.terrain = terrain
+
         self.output_dir = output_dir  # the directory to save the output
 
         self.output_prey_dir = self.output_dir / "prey"

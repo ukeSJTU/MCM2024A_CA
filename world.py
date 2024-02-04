@@ -268,3 +268,18 @@ class PredatorWorld(World):
                             self.matrix[row][col].content -= math.ceil(
                                 self.matrix[row][col].content / 8
                             )
+
+
+class Terrain(World):
+    def __init__(self, width, height):
+        super().__init__(width, height)
+        self.matrix = [[0 for _ in range(self.width)] for _ in range(self.height)]
+
+        self.create_terrain()
+
+    def create_terrain(self):
+        # make an example terrain where the left half is ocean(0) and the right half is lake(1)
+        self.matrix = [
+            [0 if col < self.width / 2 else 1 for col in range(self.width)]
+            for _ in range(self.height)
+        ]
