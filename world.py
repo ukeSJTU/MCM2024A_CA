@@ -193,6 +193,7 @@ class PredatorWorld(World):
                 )
                 for _ in range(self.width)
             ]
+            for _ in range(self.height)
         ]
 
         self.birth_rate = 2  # the birth rate of the prey of lampreys

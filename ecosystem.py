@@ -191,6 +191,34 @@ class Ecosystem:
             self.debug(4)
 
         # Rule 5: every month, adult lampreys may be eaten by predator world
+        if self.timer.get_month():
+            for row in range(self.height):
+                for col in range(self.width):
+                    self.lamprey_world[row][col][5][0] = int(
+                        self.lamprey_world[row][col][5][0]
+                        * (1 - self.predator_world[row][col] * 0.001)
+                    )
+                    self.lamprey_world[row][col][5][1] = int(
+                        self.lamprey_world[row][col][5][1]
+                        * (1 - self.predator_world[row][col] * 0.001)
+                    )
+                    self.lamprey_world[row][col][6][0] = int(
+                        self.lamprey_world[row][col][6][0]
+                        * (1 - self.predator_world[row][col] * 0.001)
+                    )
+                    self.lamprey_world[row][col][6][1] = int(
+                        self.lamprey_world[row][col][6][1]
+                        * (1 - self.predator_world[row][col] * 0.001)
+                    )
+                    self.lamprey_world[row][col][7][0] = int(
+                        self.lamprey_world[row][col][7][0]
+                        * (1 - self.predator_world[row][col] * 0.001)
+                    )
+                    self.lamprey_world[row][col][7][1] = int(
+                        self.lamprey_world[row][col][7][1]
+                        * (1 - self.predator_world[row][col] * 0.001)
+                    )
+            self.debug(5)
 
         # Rule 6: every month, lampreys may die
 
