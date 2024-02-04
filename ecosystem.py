@@ -259,6 +259,12 @@ class Ecosystem:
                     self.predator_world[row][col].die()
             self.debug(8)
 
+        # Rule 9: every month, part of the prey and predator would move to its adjacent neighbors
+        if self.timer.get_month():
+            self.prey_world.migrate()
+            self.predator_world.migrate()
+            self.debug(9)
+
         self.iter += 1
         self.timer += 1
         # print(f"Iteration {self.iter}, {self.timer}")

@@ -97,9 +97,9 @@ class LampreyWorld(World):
         self.male_cnt = int(init_sex_ratio * self.adult_cnt)
         self.female_cnt = self.adult_cnt - self.male_cnt
 
-        self.larval_death_rate = 0.7
-        self.male_death_rate = 0.2
-        self.female_death_rate = 0.2
+        self.larval_death_rate = 0.5 / 12
+        self.male_death_rate = 0.2 / 12
+        self.female_death_rate = 0.2 / 12
 
     def show(self, save=False, show=False, filename="output.png"):
         fig, ax = plt.subplots(1, 1, figsize=(5, 5))
@@ -170,6 +170,39 @@ class PreyWorld(World):
             plt.show()
         return fig, self.matrix
 
+    def migrate(self):
+        # part of the individuals in one cell has a prob to move to its 8 adjacent cells
+        # the prob is proportional to the number of individuals in the cell
+        # the prob is also proportional to the number of individuals in the adjacent cells
+
+        for row in range(self.height):
+            for col in range(self.width):
+                neighbors = [
+                    (row - 1, col - 1),
+                    (row - 1, col),
+                    (row - 1, col + 1),
+                    (row, col - 1),
+                    (row, col + 1),
+                    (row + 1, col - 1),
+                    (row + 1, col),
+                    (row + 1, col + 1),
+                ]
+                for neighbor in neighbors:
+                    if 0 <= neighbor[0] < self.height and 0 <= neighbor[1] < self.width:
+                        prob = 0.2
+                        """prob = self.matrix[row][col].content / (
+                            self.matrix[row][col].content
+                            + self.matrix[neighbor[0]][neighbor[1]].content
+                        )"""
+                        if random.random() < prob:
+                            n_migration = math.ceil(
+                                self.matrix[row][col].content
+                                / 8
+                                * random.uniform(0.1, 0.2)
+                            )
+                            self.matrix[neighbor[0]][neighbor[1]].content += n_migration
+                            self.matrix[row][col].content -= n_migration
+
 
 class PredatorWorld(World):
     def __init__(
@@ -204,3 +237,34 @@ class PredatorWorld(World):
         if show:
             plt.show()
         return fig
+
+    def migrate(self):
+        # part of the individuals in one cell has a prob to move to its 8 adjacent cells
+        # the prob is proportional to the number of individuals in the cell
+        # the prob is also proportional to the number of individuals in the adjacent cells
+
+        for row in range(self.height):
+            for col in range(self.width):
+                neighbors = [
+                    (row - 1, col - 1),
+                    (row - 1, col),
+                    (row - 1, col + 1),
+                    (row, col - 1),
+                    (row, col + 1),
+                    (row + 1, col - 1),
+                    (row + 1, col),
+                    (row + 1, col + 1),
+                ]
+                for neighbor in neighbors:
+                    if 0 <= neighbor[0] < self.height and 0 <= neighbor[1] < self.width:
+                        prob = self.matrix[row][col].content / (
+                            self.matrix[row][col].content
+                            + self.matrix[neighbor[0]][neighbor[1]].content
+                        )
+                        if random.random() < prob:
+                            self.matrix[neighbor[0]][neighbor[1]].content += math.ceil(
+                                self.matrix[row][col].content / 8
+                            )
+                            self.matrix[row][col].content -= math.ceil(
+                                self.matrix[row][col].content / 8
+                            )
