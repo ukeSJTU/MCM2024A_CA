@@ -15,7 +15,7 @@ from utils import Timer
 from species import LampreySpecies, PreySpecies, PredatorSpecies
 from world import LampreyWorld, PreyWorld, PredatorWorld
 
-K = 122
+K = 48
 
 
 class Ecosystem:
@@ -66,16 +66,17 @@ class Ecosystem:
 
         # every year, adults lampreys consume food:
 
-        # when month is 1, every lamprey grows up by 1 year
-        if self.timer.get_month() == 1:
+        # Rule 1: when month is 3, every lamprey grows up by 1 year and the 4-year-old larval lampreys grow into adult lampreys
+        # PS: we assume that every lamprey lives 7 years. The first 4 years are larval lampreys, the last 3 years are adult lampreys
+        #     here, we handle the case of metamorphosis
 
-            # print(self.lamprey_world)
-            # increase the age of every lamprey
+        if self.timer.get_month() == 3:
             for row in range(self.height):
                 for col in range(self.width):
                     for age in range(7, 0, -1):
                         if age != 5:
                             # print("Before:", self.lamprey_world[row][col][age])
+                            # increase the age of every lamprey
                             self.lamprey_world[row][col][age] = copy.deepcopy(
                                 self.lamprey_world[row][col][age - 1]
                             )
@@ -98,7 +99,7 @@ class Ecosystem:
                                 self.lamprey_world[row][col][4] * (1 - sex_ratio)
                             )
 
-        # when month is between 3-7, adult lampreys spawn and die
+        # Rule 2: when month is between 3-7, adult lampreys spawn and die
         if 3 <= self.timer.get_month() <= 7:
             for row in range(self.height):
                 for col in range(self.width):
@@ -130,6 +131,8 @@ class Ecosystem:
                                     sex
                                 ]  #! 0.4 is randomly picked
                             )
+
+        # Rule 3: when month is 6-3, 4-year-old larval lampreys grow into adult lampreys
         """
         # when month is 6-3, 4-year-old larval lampreys grow into adult lampreys
         if 6 <= self.timer.get_month() or self.timer.get_month() <= 3:
@@ -140,6 +143,7 @@ class Ecosystem:
                     )
         """
 
+        # Rule 4: every month, adult lampreys prey from the prey world
         # every month, adult lampreys consume food
         print(self.lamprey_world)
 
@@ -160,8 +164,9 @@ class Ecosystem:
                     * random.uniform(0.95, 1.05)
                 )
 
-        # print(self.lamprey_world)
-        # reproduce
+        # Rule 5: every month, adult lampreys may be eaten by predator world
+
+        # Rule 6: every month, lampreys may die
 
         # print(self.lamprey_world)
         # die
@@ -184,6 +189,10 @@ class Ecosystem:
                             self.lamprey_world[row][col][age][1]
                             * (1 - self.lamprey_world.female_death_rate)
                         )
+
+        # Rule 7: every month, the prey world reproduces and dies
+
+        # Rule 8: every month, the predator world reproduces and dies
 
         self.iter += 1
         self.timer += 1
