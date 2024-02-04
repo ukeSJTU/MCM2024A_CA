@@ -51,6 +51,17 @@ class Ecosystem:
         self.iter = 0
         self.timer = timer
 
+    def debug(self, n):
+        """_summary_
+
+        Args:
+            n (int): rule index
+        """
+        print(f"Iteration {self.iter}, {self.timer}, Rule: {n}")
+        print(self.lamprey_world)
+        print(self.prey_world)
+        print(self.predator_world)
+
     def step(self):
         # every step is one month in the real world.
         # use self.timer to iterate over time, every step should be one month
@@ -98,6 +109,7 @@ class Ecosystem:
                             self.lamprey_world[row][col][5][1] = int(
                                 self.lamprey_world[row][col][4] * (1 - sex_ratio)
                             )
+            self.debug(1)
 
         # Rule 2: when month is between 3-7, adult lampreys spawn and die
         if 3 <= self.timer.get_month() <= 7:
@@ -115,10 +127,15 @@ class Ecosystem:
                     MP = male_cnt / adult_cnt
 
                     s = int(
-                        self.prey_world[row][col] * K * MP * (1 - MP)
+                        self.prey_world[row][col]
+                        * K
+                        * MP
+                        * (1 - MP)
+                        * adult_cnt
+                        * adult_cnt
                     )  # put the self.prey_world[x][y] at the front of the equation
                     # becuase we only implement * operator for PreySpecies * int or PreySpecies * float
-
+                    # print(f"MP: {MP}, s: {s}, prey: {self.prey_world[row][col]}")
                     self.lamprey_world[row][col][0] += s
 
                     # then we proportionally minus the number of adult lampreys fromage over 5, because mated lampreys die after reproduce
@@ -131,6 +148,7 @@ class Ecosystem:
                                     sex
                                 ]  #! 0.4 is randomly picked
                             )
+            self.debug(2)
 
         # Rule 3: when month is 6-3, 4-year-old larval lampreys grow into adult lampreys
         """
@@ -142,27 +160,35 @@ class Ecosystem:
                         self.lamprey_world[row][col][4]
                     )
         """
+        if 6 <= self.timer.get_month() or self.timer.get_month() <= 3:
+            self.debug(3)
 
         # Rule 4: every month, adult lampreys prey from the prey world
         # every month, adult lampreys consume food
-        print(self.lamprey_world)
-
-        for row in range(self.height):
-            for col in range(self.width):
-                self.prey_world[row][col] = PreySpecies(
-                    content=self.prey_world[row][col]
-                    - (
-                        self.lamprey_world[row][col][5][0]
-                        + self.lamprey_world[row][col][5][1]
-                        + self.lamprey_world[row][col][6][0]
-                        + self.lamprey_world[row][col][6][1]
-                        + self.lamprey_world[row][col][7][0]
-                        + self.lamprey_world[row][col][7][1]
+        if self.timer.get_month():
+            for row in range(self.height):
+                for col in range(self.width):
+                    self.prey_world[row][col] = PreySpecies(
+                        content=self.prey_world[row][col]
+                        - (
+                            self.lamprey_world[row][col][5][0]
+                            + self.lamprey_world[row][col][5][1]
+                            + self.lamprey_world[row][col][6][0]
+                            + self.lamprey_world[row][col][6][1]
+                            + self.lamprey_world[row][col][7][0]
+                            + self.lamprey_world[row][col][7][1]
+                        )
+                        * 0.001
+                        * 30
+                        * random.uniform(0.95, 1.05)
                     )
-                    * 0.67
-                    * 30
-                    * random.uniform(0.95, 1.05)
-                )
+
+                    # if all the food in this cell is gone, the lampreys die immediately
+                    if self.prey_world[row][col] < 0:
+                        self.prey_world[row][col] = 0
+                        self.lamprey_world[row][col] = LampreySpecies()
+
+            self.debug(4)
 
         # Rule 5: every month, adult lampreys may be eaten by predator world
 
@@ -189,6 +215,7 @@ class Ecosystem:
                             self.lamprey_world[row][col][age][1]
                             * (1 - self.lamprey_world.female_death_rate)
                         )
+        self.debug(6)
 
         # Rule 7: every month, the prey world reproduces and dies
 
@@ -196,8 +223,8 @@ class Ecosystem:
 
         self.iter += 1
         self.timer += 1
-        print(f"Iteration {self.iter}, {self.timer}")
-        print(self.lamprey_world)
+        # print(f"Iteration {self.iter}, {self.timer}")
+        # print(self.lamprey_world)
 
     def show(self):
         # lamprey_fig, color_mat = self.lamprey_world.show()
