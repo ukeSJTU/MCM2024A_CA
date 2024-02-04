@@ -1,6 +1,7 @@
 from typing import Callable, List, Union, TYPE_CHECKING
 import random
 import copy
+from utils import softmax
 from species import LampreySpecies, PreySpecies
 
 if TYPE_CHECKING:
@@ -254,16 +255,101 @@ rule_predator_reproduce = Rule(
 )
 
 
-def action_migrate(ecosystem: "Ecosystem"):
-    ecosystem.prey_world.migrate()
-    ecosystem.predator_world.migrate()
+def action_prey_migration(ecosystem: "Ecosystem"):
+    # the prey has a higher prob to move to neighrbor cells with less adult lampreys
+    for row in range(1, ecosystem.height - 1, 1):
+        for col in range(1, ecosystem.width - 1, 1):
+            neighbors = [
+                (row - 1, col - 1),
+                (row - 1, col),
+                (row - 1, col + 1),
+                (row, col - 1),
+                (row, col + 1),
+                (row + 1, col - 1),
+                (row + 1, col),
+                (row + 1, col + 1),
+            ]
+            probs = []
+            for neighbor in neighbors:
+                """if (
+                    0 <= neighbor[0] < ecosystem.height
+                    and 0 <= neighbor[1] < ecosystem.width
+                ):
+                """
+                n_row, n_col = neighbor
+                cur_adult_cnt, _, _, _ = ecosystem.lamprey_world.describe(
+                    row=row, col=col
+                )
+                neighbor_adult_cnt, _, _, _ = ecosystem.lamprey_world.describe(
+                    row=n_row, col=n_col
+                )
+
+                prob = cur_adult_cnt - neighbor_adult_cnt
+                probs.append(prob)
+
+            # softamx to get the prob
+            probs = list(softmax(probs))
+            migration_rate = 0.1  # TODO the migration rate should be controled by the corresponding species
+            for i, neighbor in enumerate(neighbors):
+                n_row, n_col = neighbor
+                ecosystem.prey_world[n_row][n_col] = ecosystem.prey_world[n_row][
+                    n_col
+                ] + int(ecosystem.prey_world[row][col] * probs[i] * migration_rate)
+                ecosystem.prey_world[row][col] = ecosystem.prey_world[row][col] - int(
+                    ecosystem.prey_world[row][col] * probs[i] * migration_rate
+                )
+
     ecosystem.debug(9)
 
 
-rule_migrate = Rule(
-    which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), action_migrate
+def action_predator_migration(ecosystem: "Ecosystem"):
+    # the predator has a higher prob to move to neighbor cells with more adult lampreys
+    for row in range(1, ecosystem.height - 1, 1):
+        for col in range(1, ecosystem.width - 1, 1):
+            neighbors = [
+                (row - 1, col - 1),
+                (row - 1, col),
+                (row - 1, col + 1),
+                (row, col - 1),
+                (row, col + 1),
+                (row + 1, col - 1),
+                (row + 1, col),
+                (row + 1, col + 1),
+            ]
+            probs = []
+            for neighbor in neighbors:
+                n_row, n_col = neighbor
+                cur_adult_cnt, _, _, _ = ecosystem.lamprey_world.describe(
+                    row=row, col=col
+                )
+                neighbor_adult_cnt, _, _, _ = ecosystem.lamprey_world.describe(
+                    row=n_row, col=n_col
+                )
+                prob = neighbor_adult_cnt - cur_adult_cnt
+                probs.append(prob)
+
+            # softamx to get the prob
+            probs = list(softmax(probs))
+            migration_rate = 0.1
+            for i, neighbor in enumerate(neighbors):
+                n_row, n_col = neighbor
+                ecosystem.prey_world[n_row][n_col] = ecosystem.prey_world[n_row][
+                    n_col
+                ] + int(ecosystem.prey_world[row][col] * probs[i] * migration_rate)
+                ecosystem.prey_world[row][col] = ecosystem.prey_world[row][col] - int(
+                    ecosystem.prey_world[row][col] * probs[i] * migration_rate
+                )
+
+    ecosystem.debug(10)
+
+
+rule_prey_migration = Rule(
+    which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), action_prey_migration
 )
 
+rule_predator_migration = Rule(
+    which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), action_predator_migration
+)
 
 rulesets = RuleSet(
     [
@@ -274,6 +360,7 @@ rulesets = RuleSet(
         rule_death,
         rule_prey_reproduce,
         rule_predator_reproduce,
-        rule_migrate,
+        rule_prey_migration,
+        rule_predator_migration,
     ]
 )
