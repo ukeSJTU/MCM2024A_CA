@@ -3,13 +3,18 @@ import matplotlib.pyplot as plt
 import os
 from pathlib import Path
 import random
+from typing import Union, Literal
 import time
 from pathlib import Path
 import copy
+from scipy.ndimage import uniform_filter, maximum_filter
 import math
 from abc import abstractmethod, ABC
 import sys
 from tqdm import tqdm
+from matplotlib.colors import Normalize
+import seaborn as sns
+
 
 from utils import Timer
 from species import LampreySpecies, PreySpecies, PredatorSpecies
@@ -35,6 +40,14 @@ class Ecosystem:
         self.predator_world = predator_world
         self.output_dir = output_dir  # the directory to save the output
 
+        self.output_prey_dir = self.output_dir / "prey"
+        self.output_predator_dir = self.output_dir / "predator"
+        self.output_lamprey_dir = self.output_dir / "lamprey"
+
+        self.output_prey_dir.mkdir(parents=True, exist_ok=True)
+        self.output_predator_dir.mkdir(parents=True, exist_ok=True)
+        self.output_lamprey_dir.mkdir(parents=True, exist_ok=True)
+
         assert (
             self.lamprey_world.width
             == self.prey_world.width
@@ -50,6 +63,7 @@ class Ecosystem:
         self.height = self.lamprey_world.height
 
         self.fig, self.axes = plt.subplots(2, 2, figsize=(10, 5))
+        self.cbars = []
 
         self.iter = 0
         self.timer = timer
@@ -82,9 +96,93 @@ class Ecosystem:
         self.iter += 1
         self.timer += 1
 
-    def show(self):
+    def visualize(
+        self, save: bool = False, show: bool = True, filename: Union[str, Path] = None
+    ):
         # lamprey_fig, color_mat = self.lamprey_world.show()
         # prey_fig, prey_mat = self.prey_world.show()
+
+        if filename is None:
+            filename = f"{self.iter}.png"
+
+        # prey_data = np.array(self.prey_world.matrix)
+        # predator_data = np.array(self.predator_world.matrix)
+
+        prey_data = np.array(
+            [[cell.content for cell in row] for row in self.prey_world.matrix]
+        )
+        predator_data = np.array(
+            [[cell.content for cell in row] for row in self.predator_world.matrix]
+        )
+
+        # max/mean pool the data
+        pool_size = 10  # Adjust based on desired granularity
+        prey_data_pooled = self.apply_pooling(
+            prey_data, size=pool_size, method="max"
+        )  # or 'mean'
+        predator_data_pooled = self.apply_pooling(
+            predator_data, size=pool_size, method="max"
+        )
+
+        # Normalize the data to scale between 0 and 255
+        norm = Normalize(
+            vmin=0, vmax=max(prey_data_pooled.max(), predator_data_pooled.max())
+        )
+        prey_normalized = norm(prey_data) * 255
+        predator_normalized = norm(predator_data) * 255
+
+        prey_ax = sns.heatmap(prey_normalized, cmap="viridis", ax=self.axes[0, 0])
+        predator_ax = sns.heatmap(
+            predator_normalized, cmap="viridis", ax=self.axes[0, 1]
+        )
+
+        if save:
+            prey_fig = prey_ax.get_figure()
+            prey_fig.savefig(str(self.output_prey_dir / filename))
+
+            predator_fig = predator_ax.get_figure()
+            predator_fig.savefig(str(self.output_predator_dir / filename))
+
+        if show:
+            plt.tight_layout()
+            plt.pause(0.1)
+
+        return
+
+        for ax in self.axes.flat:
+            ax.clear()
+
+        for cbar in self.cbars[::-1]:
+            cbar.remove()
+        self.cbars.clear()
+
+        # Visualize the prey_world
+        ax1 = self.axes[0, 0]
+        prey_plot = ax1.imshow(prey_normalized, cmap="viridis", interpolation="nearest")
+        ax1.set_title("Prey World")
+        cbar = self.fig.colorbar(prey_plot, ax=ax1, fraction=0.046, pad=0.04)
+        self.cbars.append(cbar)
+
+        # Visualize the predator_world
+        ax2 = self.axes[0, 1]
+        predator_plot = ax2.imshow(
+            predator_normalized, cmap="viridis", interpolation="nearest"
+        )
+        ax2.set_title("Predator World")
+        cbar = self.fig.colorbar(predator_plot, ax=ax2, fraction=0.046, pad=0.04)
+        self.cbars.append(cbar)
+
+        if save:
+            # Save the figures to the specified output directory
+            self.fig.savefig(str(self.output_dir / filename))
+
+        if show:
+            # Display the figures
+            plt.tight_layout()
+            plt.pause(0.1)
+            plt.close()
+
+        return
 
         color_mat = []
         male_percentage_mat = []
@@ -178,3 +276,19 @@ class Ecosystem:
 
         # save every frame to a folder
         self.fig.savefig(self.output_dir / f"{self.iter}.png")
+
+    @classmethod
+    def apply_pooling(self, data, size=5, method: Literal["max", "mean"] = "max"):
+        """Apply pooling to reduce the size of the data matrix.
+
+        Parameters:
+        - data: 2D numpy array of data to pool.
+        - size: Size of the pooling window.
+        - method: 'max' for max pooling, 'mean' for mean pooling.
+        """
+        if method == "max":
+            return maximum_filter(data, size=size)[::size, ::size]
+        elif method == "mean":
+            return uniform_filter(data, size=size)[::size, ::size]
+        else:
+            raise ValueError("Method must be 'max' or 'mean'.")

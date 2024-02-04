@@ -16,7 +16,7 @@ from species import LampreySpecies, PreySpecies, PredatorSpecies
 from world import LampreyWorld, PreyWorld, PredatorWorld
 from ecosystem import Ecosystem
 
-# plt.ion()
+plt.ion()
 
 # Define the file where you want to redirect the output
 output_file = open("output.txt", "w")
@@ -47,8 +47,8 @@ output_dir.mkdir(parents=True, exist_ok=True)
 
 
 def main():
-    WORLD_WIDTH = 10
-    WORLD_HEIGHT = 10
+    WORLD_WIDTH = 100
+    WORLD_HEIGHT = 100
 
     # Create the lamprey world
     init_lamprey = LampreySpecies()
@@ -101,7 +101,7 @@ def main():
     n_iter = 3 * 120
     for i in tqdm(range(n_iter)):
         ecosystem.step()
-        # ecosystem.show()
+        ecosystem.visualize(save=True)
 
 
 if __name__ == "__main__":
