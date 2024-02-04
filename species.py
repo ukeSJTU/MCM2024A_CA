@@ -86,31 +86,83 @@ class BaseSpecies:
     # calculation methods:
     def __add__(self, other):
         if isinstance(other, BaseSpecies):
-            return self.content + other.content
+            new_content = self.content + other.content
+            # return self.content + other.content
         else:  # Assuming other is int or float
-            return self.content + other
+            new_content = self.content + other
+            # return self.content + other
+        return self.__class__(content=new_content)
 
     def __sub__(self, other):
         if isinstance(other, BaseSpecies):
-            return self.content - other.content
+            new_content = self.content - other.content
+            # return self.content - other.content
         else:  # Assuming other is int or float
-            return self.content - other
+            new_content = self.content - other
+            # return self.content - other
+        return self.__class__(content=new_content)
 
     def __mul__(self, other):
         if isinstance(other, BaseSpecies):
-            return self.content * other.content
+            new_content = self.content * other.content
+            # return self.content * other.content
         else:
-            return self.content * other
+            new_content = self.content * other
+            # return self.content * other
+        return self.__class__(content=new_content)
 
     def __div__(self, other):
         if isinstance(other, BaseSpecies):
-            return self.content / other.content
+            new_content = self.content / other.content
         else:
-            return self.content / other
+            new_content = self.content / other
+        return new_content
+
+    def __radd__(self, other):
+        if isinstance(other, BaseSpecies):
+            new_content = self.content + other.content
+        else:  # Assuming other is int or float
+            new_content = self.content + other
+        return new_content
+
+    def __rsub__(self, other):
+        if isinstance(other, BaseSpecies):
+            new_content = self.content - other.content
+        else:
+            new_content = self.content - other
+        return new_content
+
+    def __rmul__(self, other):
+        if isinstance(other, BaseSpecies):
+            new_content = self.content * other.content
+        else:
+            new_content = self.content * other
+        return new_content
+
+    def __truediv__(self, other):
+        if isinstance(other, BaseSpecies):
+            new_content = self.content / other.content
+        else:
+            new_content = self.content / other
+        return new_content
+
+    def __int__(self):
+        return int(self.content)
+
+    def __float__(self):
+        return float(self.content)
+
+    def __bool__(self):
+        return bool(self.content)
+
+    def __abs__(self):
+        return abs(self.content)
 
 
 class PreySpecies(BaseSpecies):
     def __init__(self, content, born_rate=0.1, death_rate=0.08, prey_rate=0.1):
+        if isinstance(content, BaseSpecies):
+            content = content.content
         super().__init__(content, born_rate, death_rate, prey_rate)
 
     def die(self):
@@ -122,6 +174,8 @@ class PreySpecies(BaseSpecies):
 
 class PredatorSpecies(BaseSpecies):
     def __init__(self, content, born_rate=0.1, death_rate=0.08, prey_rate=0.1):
+        if isinstance(content, BaseSpecies):
+            content = content.content
         super().__init__(content, born_rate, death_rate, prey_rate)
 
     def die(self):
