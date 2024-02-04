@@ -12,31 +12,123 @@ import sys
 from tqdm import tqdm
 
 
-class Species:
-    def __init__(self, number, reproduction_rate, death_rate, prey_rate):
-        self.number = number
-        self.reproduction_rate = reproduction_rate
+# A base class for species
+class BaseSpecies:
+    def __init__(self, content, born_rate, death_rate, prey_rate):
+        """A base class for species
+
+        the instance of the species class corresponds to a cell in the world,
+        it should handle the basic attributes of a species, such as reproduce, die, born, etc.
+
+        Args:
+            number (_type_): _description_
+            born_rate (_type_): _description_
+            death_rate (_type_): _description_
+            prey_rate (_type_): _description_
+        """
+        self.content = content
+        self.born_rate = born_rate
         self.death_rate = death_rate
         self.prey_rate = prey_rate
 
     def __str__(self):
-        return f"Number: {self.number}, Reproduction Rate: {self.reproduction_rate}, Death Rate: {self.death_rate}, Prey Rate: {self.prey_rate}"
+        return str(self.content)
+
+    def __repr__(self):
+        return f"Content: {self.content}, Reproduction Rate: {self.born_rate}, Death Rate: {self.death_rate}, Prey Rate: {self.prey_rate}"
+
+    @abstractmethod
+    def die(self):
+        """only natural death, not predation or spawning death"""
+        pass
+
+    @abstractmethod
+    def born(self):
+        pass
+
+    # Comparison methods
+    def __lt__(self, other):
+        if isinstance(other, BaseSpecies):
+            return self.content < other.content
+        else:  # Assuming other is int or float
+            return self.content < other
+
+    def __le__(self, other):
+        if isinstance(other, BaseSpecies):
+            return self.content <= other.content
+        else:  # Assuming other is int or float
+            return self.content <= other
+
+    def __eq__(self, other):
+        if isinstance(other, BaseSpecies):
+            return self.content == other.content
+        else:  # Assuming other is int or float
+            return self.content == other
+
+    def __ne__(self, other):
+        if isinstance(other, BaseSpecies):
+            return self.content != other.content
+        else:  # Assuming other is int or float
+            return self.content != other
+
+    def __gt__(self, other):
+        if isinstance(other, BaseSpecies):
+            return self.content > other.content
+        else:  # Assuming other is int or float
+            return self.content > other
+
+    def __ge__(self, other):
+        if isinstance(other, BaseSpecies):
+            return self.content >= other.content
+        else:  # Assuming other is int or float
+            return self.content >= other
+
+    # calculation methods:
+    def __add__(self, other):
+        if isinstance(other, BaseSpecies):
+            return self.content + other.content
+        else:  # Assuming other is int or float
+            return self.content + other
+
+    def __sub__(self, other):
+        if isinstance(other, BaseSpecies):
+            return self.content - other.content
+        else:  # Assuming other is int or float
+            return self.content - other
+
+    def __mul__(self, other):
+        if isinstance(other, BaseSpecies):
+            return self.content * other.content
+        else:
+            return self.content * other
+
+    def __div__(self, other):
+        if isinstance(other, BaseSpecies):
+            return self.content / other.content
+        else:
+            return self.content / other
 
 
-# and the lamprey, the prey, and the predator are all subclasses of the species class
-class LampreySpecies(Species):
-    def __init__(self, number, reproduction_rate, death_rate, prey_rate):
-        super().__init__(number, reproduction_rate, death_rate, prey_rate)
+class PreySpecies(BaseSpecies):
+    def __init__(self, content, born_rate=0.1, death_rate=0.08, prey_rate=0.1):
+        super().__init__(content, born_rate, death_rate, prey_rate)
+
+    def die(self):
+        self.content = self.content * (1 - self.death_rate)
+
+    def born(self):
+        self.content = self.content * (1 + self.prey_rate)
 
 
-class PreySpecies(Species):
-    def __init__(self, number, reproduction_rate, death_rate, prey_rate):
-        super().__init__(number, reproduction_rate, death_rate, prey_rate)
+class PredatorSpecies(BaseSpecies):
+    def __init__(self, content, born_rate=0.1, death_rate=0.08, prey_rate=0.1):
+        super().__init__(content, born_rate, death_rate, prey_rate)
 
+    def die(self):
+        self.content = self.content * (1 - self.death_rate)
 
-class PredatorSpecies(Species):
-    def __init__(self, number, reproduction_rate, death_rate, prey_rate):
-        super().__init__(number, reproduction_rate, death_rate, prey_rate)
+    def born(self):
+        self.content = self.content * (1 + self.prey_rate)
 
 
 class LampreySpecies:

@@ -138,14 +138,25 @@ class LampreyWorld(World):
 class PreyWorld(World):
     def __init__(
         self,
-        init_value,
+        init_value_range: tuple,
         width=100,
         height=100,
+        born_rate=0.1,
+        death_rate=0.08,
+        prey_rate=0.1,
     ):
         super().__init__(width, height)
         # self.init = init_value
         self.matrix = [
-            [random.uniform(500, init_value) for _ in range(self.width)]
+            [
+                PreySpecies(
+                    content=random.uniform(init_value_range[0], init_value_range[1]),
+                    born_rate=born_rate,
+                    death_rate=death_rate,
+                    prey_rate=prey_rate,
+                )
+                for _ in range(self.width)
+            ]
             for _ in range(self.height)
         ]
 
@@ -163,14 +174,25 @@ class PreyWorld(World):
 class PredatorWorld(World):
     def __init__(
         self,
-        init_value,
+        init_value_range: tuple,
         width=100,
         height=100,
+        born_rate=0.1,
+        death_rate=0.08,
+        prey_rate=0.1,
     ):
         super().__init__(width, height)
         # self.init = init_value
         self.matrix = [
-            [init_value for _ in range(self.width)] for _ in range(self.height)
+            [
+                PredatorSpecies(
+                    content=random.uniform(init_value_range[0], init_value_range[1]),
+                    born_rate=born_rate,
+                    death_rate=death_rate,
+                    prey_rate=prey_rate,
+                )
+                for _ in range(self.width)
+            ]
         ]
 
         self.birth_rate = 2  # the birth rate of the prey of lampreys

@@ -72,14 +72,24 @@ def main():
     print(lamprey_world)
 
     # Create the food world
-    init_food = 1000
-    prey_world = PreyWorld(init_food, width=WORLD_WIDTH, height=WORLD_HEIGHT)
+    prey_world = PreyWorld(
+        init_value_range=(800, 1000),
+        width=WORLD_WIDTH,
+        height=WORLD_HEIGHT,
+        born_rate=0.1,
+        death_rate=0.08,
+        prey_rate=0.1,
+    )
     print(prey_world)
 
     # Create the predator world
-    init_predator = 100
     predator_world = PredatorWorld(
-        init_predator, width=WORLD_WIDTH, height=WORLD_HEIGHT
+        init_value_range=(800, 1000),
+        width=WORLD_WIDTH,
+        height=WORLD_HEIGHT,
+        born_rate=0.1,
+        death_rate=0.08,
+        prey_rate=0.1,
     )
 
     ecosystem = Ecosystem(
@@ -91,7 +101,7 @@ def main():
     n_iter = 10
     for i in tqdm(range(n_iter)):
         ecosystem.step()
-        ecosystem.show()
+        # ecosystem.show()
 
 
 if __name__ == "__main__":

@@ -25,6 +25,7 @@ class Ecosystem:
         prey_world: PreyWorld,
         predator_world: PredatorWorld,
         output_dir: Path = Path("./output") / str(int(time.time())),
+        timer: Timer = Timer(2000, 1),
     ):
         self.lamprey_world = lamprey_world
         self.prey_world = prey_world
@@ -48,9 +49,11 @@ class Ecosystem:
         self.fig, self.axes = plt.subplots(2, 2, figsize=(10, 5))
 
         self.iter = 0
+        self.timer = timer
 
     def step(self):
-        # every step is one year in the real world.
+        # every step is one month in the real world.
+        # use self.timer to iterate over time, every step should be one month
         # there are multiple rules for the lampreys to consume food, reproduce and die
         # we assume that every lamprey lives 7 years. The first 4 years are larval lampreys, the last 3 years are adult lampreys
         # 1. every larval lamprey turns into adults in 4 years. Their gender is determined based on the amount of food in the cell
@@ -63,38 +66,80 @@ class Ecosystem:
 
         # every year, adults lampreys consume food:
 
-        # print(self.lamprey_world)
-        # increase the age of every lamprey
-        for row in range(self.height):
-            for col in range(self.width):
-                for age in range(7, 0, -1):
-                    if age != 5:
-                        # print("Before:", self.lamprey_world[row][col][age])
-                        self.lamprey_world[row][col][age] = copy.deepcopy(
-                            self.lamprey_world[row][col][age - 1]
-                        )
-                        # print("After", self.lamprey_world[row][col][age])
+        # when month is 1, every lamprey grows up by 1 year
+        if self.timer.get_month() == 1:
 
-                    # 4-year-old becomes adult
-                    else:
-                        """
-                        如果周围环境中平均每年有≥245条(365*0.67)salmonid，认为⻝物丰富，雄
-                        性占⽐偏向56%。平均每年＜245条(365*0.67)salmonid，认为⻝物短缺，雄性占⽐偏向78%
-                        """
-                        if self.prey_world[row][col] >= 245:
-                            sex_ratio = 0.56 * random.uniform(0.95, 1.05)
+            # print(self.lamprey_world)
+            # increase the age of every lamprey
+            for row in range(self.height):
+                for col in range(self.width):
+                    for age in range(7, 0, -1):
+                        if age != 5:
+                            # print("Before:", self.lamprey_world[row][col][age])
+                            self.lamprey_world[row][col][age] = copy.deepcopy(
+                                self.lamprey_world[row][col][age - 1]
+                            )
+                            # print("After", self.lamprey_world[row][col][age])
+
+                        # 4-year-old becomes adult
                         else:
-                            sex_ratio = 0.78 * random.uniform(0.95, 1.05)
-                        self.lamprey_world[row][col][5][0] = int(
-                            self.lamprey_world[row][col][4] * sex_ratio
-                        )
-                        self.lamprey_world[row][col][5][1] = int(
-                            self.lamprey_world[row][col][4] * (1 - sex_ratio)
-                        )
+                            """
+                            如果周围环境中平均每年有≥245条(365*0.67)salmonid，认为⻝物丰富，雄
+                            性占⽐偏向56%。平均每年＜245条(365*0.67)salmonid，认为⻝物短缺，雄性占⽐偏向78%
+                            """
+                            if self.prey_world[row][col] >= 245:
+                                sex_ratio = 0.56 * random.uniform(0.95, 1.05)
+                            else:
+                                sex_ratio = 0.78 * random.uniform(0.95, 1.05)
+                            self.lamprey_world[row][col][5][0] = int(
+                                self.lamprey_world[row][col][4] * sex_ratio
+                            )
+                            self.lamprey_world[row][col][5][1] = int(
+                                self.lamprey_world[row][col][4] * (1 - sex_ratio)
+                            )
 
-        # print(self.lamprey_world)
-        self.prey_world[row][col] = int(
-            self.prey_world[row][col]
+        # when month is between 3-7, adult lampreys spawn and die
+        elif 3 <= self.timer.get_month() <= 7:
+            for row in range(self.height):
+                for col in range(self.width):
+
+                    # TODO better way to calc sex_ratio or MP
+                    adult_cnt, _, male_cnt, female_cnt = self.lamprey_world.describe(
+                        row=row, col=col
+                    )
+
+                    if adult_cnt == 0:
+                        continue
+
+                    MP = male_cnt / adult_cnt
+
+                    s = int(K * MP * (1 - MP) * self.prey_world[row][col])
+                    self.lamprey_world[row][col][0] += s
+
+                    # then we proportionally minus the number of adult lampreys fromage over 5, because mated lampreys die after reproduce
+
+                    for age in [5, 6, 7]:
+                        for sex in [0, 1]:
+                            self.lamprey_world[row][col][age][sex] = int(
+                                0.4
+                                * self.lamprey_world[row][col][age][
+                                    sex
+                                ]  #! 0.4 is randomly picked
+                            )
+
+        # when month is 6-3, 4-year-old larval lampreys grow into adult lampreys
+        elif 6 <= self.timer.get_month() or self.timer.get_month() <= 3:
+            for row in range(self.height):
+                for col in range(self.width):
+                    self.lamprey_world[row][col][5] = copy.deepcopy(
+                        self.lamprey_world[row][col][4]
+                    )
+        else:
+            pass
+
+        # every month, adult lampreys consume food
+        self.prey_world[row][col] = PreySpecies(
+            content=self.prey_world[row][col]
             - (
                 self.lamprey_world[row][col][5][0]
                 + self.lamprey_world[row][col][5][1]
@@ -104,38 +149,12 @@ class Ecosystem:
                 + self.lamprey_world[row][col][7][1]
             )
             * 0.67
-            * 300
+            * 30
             * random.uniform(0.95, 1.05)
         )
 
         # print(self.lamprey_world)
         # reproduce
-        for row in range(self.height):
-            for col in range(self.width):
-
-                # TODO better way to calc sex_ratio or MP
-                adult_cnt, _, male_cnt, female_cnt = self.lamprey_world.describe(
-                    row=row, col=col
-                )
-
-                if adult_cnt == 0:
-                    continue
-
-                MP = male_cnt / adult_cnt
-
-                s = int(K * MP * (1 - MP) * self.prey_world[row][col])
-                self.lamprey_world[row][col][0] += s
-
-                # then we proportionally minus the number of adult lampreys fromage over 5, because mated lampreys die after reproduce
-
-                for age in [5, 6, 7]:
-                    for sex in [0, 1]:
-                        self.lamprey_world[row][col][age][sex] = int(
-                            0.4
-                            * self.lamprey_world[row][col][age][
-                                sex
-                            ]  #! 0.4 is randomly picked
-                        )
 
         # print(self.lamprey_world)
         # die
@@ -160,7 +179,8 @@ class Ecosystem:
                         )
 
         self.iter += 1
-        print(f"Iteration {self.iter}")
+        self.timer += 1
+        print(f"Iteration {self.iter}, {self.timer}")
         print(self.lamprey_world)
 
     def show(self):
