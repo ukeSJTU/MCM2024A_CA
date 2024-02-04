@@ -185,7 +185,7 @@ class Ecosystem:
 
                     # if all the food in this cell is gone, the lampreys die immediately
                     if self.prey_world[row][col] < 0:
-                        self.prey_world[row][col] = 0
+                        self.prey_world[row][col] = PreySpecies(content=0)
                         self.lamprey_world[row][col] = LampreySpecies()
 
             self.debug(4)
@@ -221,33 +221,43 @@ class Ecosystem:
             self.debug(5)
 
         # Rule 6: every month, lampreys may die
+        if self.timer.get_month():
+            for row in range(self.height):
+                for col in range(self.width):
+                    for age in range(7, 0, -1):
+                        # adult has a death rate of 40% and larval death rate is 60%
+                        if age <= 4:
+                            self.lamprey_world[row][col][age] = int(
+                                self.lamprey_world[row][col][age]
+                                * (1 - self.lamprey_world.larval_death_rate)
+                            )
+                        else:
+                            self.lamprey_world[row][col][age][0] = int(
+                                self.lamprey_world[row][col][age][0]
+                                * (1 - self.lamprey_world.male_death_rate)
+                            )
 
-        # print(self.lamprey_world)
-        # die
-        for row in range(self.height):
-            for col in range(self.width):
-                for age in range(7, 0, -1):
-                    # adult has a death rate of 40% and larval death rate is 60%
-                    if age <= 4:
-                        self.lamprey_world[row][col][age] = int(
-                            self.lamprey_world[row][col][age]
-                            * (1 - self.lamprey_world.larval_death_rate)
-                        )
-                    else:
-                        self.lamprey_world[row][col][age][0] = int(
-                            self.lamprey_world[row][col][age][0]
-                            * (1 - self.lamprey_world.male_death_rate)
-                        )
-
-                        self.lamprey_world[row][col][age][1] = int(
-                            self.lamprey_world[row][col][age][1]
-                            * (1 - self.lamprey_world.female_death_rate)
-                        )
-        self.debug(6)
+                            self.lamprey_world[row][col][age][1] = int(
+                                self.lamprey_world[row][col][age][1]
+                                * (1 - self.lamprey_world.female_death_rate)
+                            )
+            self.debug(6)
 
         # Rule 7: every month, the prey world reproduces and dies
+        if self.timer.get_month():
+            for row in range(self.height):
+                for col in range(self.width):
+                    self.prey_world[row][col].born()
+                    self.prey_world[row][col].die()
+            self.debug(7)
 
         # Rule 8: every month, the predator world reproduces and dies
+        if self.timer.get_month():
+            for row in range(self.height):
+                for col in range(self.width):
+                    self.predator_world[row][col].born()
+                    self.predator_world[row][col].die()
+            self.debug(8)
 
         self.iter += 1
         self.timer += 1
