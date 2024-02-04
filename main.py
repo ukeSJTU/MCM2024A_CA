@@ -22,7 +22,7 @@ from ecosystem import Ecosystem
 output_file = open("output.txt", "w")
 
 # Redirect the standard output (console) to the file
-# sys.stdout = output_file
+sys.stdout = output_file
 
 
 # To restore the console output, you can reset sys.stdout to its original value
@@ -84,7 +84,7 @@ def main():
 
     # Create the predator world
     predator_world = PredatorWorld(
-        init_value_range=(800, 1000),
+        init_value_range=(200, 400),
         width=WORLD_WIDTH,
         height=WORLD_HEIGHT,
         born_rate=0.1,
@@ -98,13 +98,12 @@ def main():
         predator_world=predator_world,
     )
 
-    n_iter = 10
+    n_iter = 3 * 120
     for i in tqdm(range(n_iter)):
         ecosystem.step()
         # ecosystem.show()
 
 
 if __name__ == "__main__":
-    K = 122
     main()
     output_file.close()
