@@ -1,7 +1,7 @@
 from typing import Callable, List, Union, TYPE_CHECKING
 import random
 import copy
-from utils import softmax
+from utils import softmax, timer
 from species import LampreySpecies, PreySpecies
 
 if TYPE_CHECKING:
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 class Rule:
-    def __init__(self, condition: Callable, action: Callable):
+    def __init__(self, condition: Callable, action: Callable, description: str = None):
         """An atomic rule
 
         Args:
@@ -17,7 +17,14 @@ class Rule:
             action (Callable): action to take when condition is met
         """
         self.condition = condition
-        self.action = action
+        self.action = timer(action)
+
+        if description is None:
+            self.description = action.__name__
+        self.description = description
+
+    def get_time(self):
+        return self.action.total_time
 
 
 class RuleSet:
@@ -42,7 +49,7 @@ def which_month(n: Union[int, List[int]]):
     """
 
     def condition(ecosystem: "Ecosystem") -> bool:
-        current_month = ecosystem.timer.get_month()
+        current_month = ecosystem.calendar.get_month()
         if isinstance(n, int):
             return current_month == n
         elif isinstance(n, list):
@@ -351,6 +358,61 @@ rule_predator_migration = Rule(
     which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), action_predator_migration
 )
 
+
+def action_larval_lamprey_migration(ecosystem: "Ecosystem"):
+    # the larval lampreys migrate to the cells with more food
+    pass
+
+
+def action_adult_lamprey_migration(ecosystem: "Ecosystem"):
+    # the adult lampreys migrate to the cells with more food(prey)
+    for age in [5, 6, 7]:
+        for row in range(1, ecosystem.height - 1, 1):
+            for col in range(1, ecosystem.width - 1, 1):
+                neighbors = [
+                    (row - 1, col - 1),
+                    (row - 1, col),
+                    (row - 1, col + 1),
+                    (row, col - 1),
+                    (row, col + 1),
+                    (row + 1, col - 1),
+                    (row + 1, col),
+                    (row + 1, col + 1),
+                ]
+                probs = []
+                for neighbor in neighbors:
+                    n_row, n_col = neighbor
+
+                    cur_prey_cnt = ecosystem.prey_world[row][col].content
+                    neighbor_prey_cnt = ecosystem.prey_world[n_row][n_col].content
+
+                    prob = neighbor_prey_cnt - cur_prey_cnt
+                    probs.append(prob)
+
+                # softamx to get the prob
+                probs = list(softmax(probs))
+                migration_rate = 0.1
+                for i, neighbor in enumerate(neighbors):
+                    n_row, n_col = neighbor
+                    for sex in [0, 1]:
+                        n_migration = int(
+                            ecosystem.lamprey_world[row][col][age][sex]
+                            * probs[i]
+                            * migration_rate
+                        )
+                        ecosystem.lamprey_world[n_row][n_col][age][sex] += n_migration
+
+                        ecosystem.lamprey_world[row][col][age][sex] -= n_migration
+
+
+rule_larval_lamprey_migration = Rule(
+    which_month([1, 2, 3, 6, 7, 8, 9, 10, 11, 12]), action_larval_lamprey_migration
+)
+
+rule_adult_lamprey_migration = Rule(
+    which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), action_adult_lamprey_migration
+)
+
 rulesets = RuleSet(
     [
         rule_grow_older,
@@ -362,5 +424,6 @@ rulesets = RuleSet(
         rule_predator_reproduce,
         rule_prey_migration,
         rule_predator_migration,
+        rule_adult_lamprey_migration,
     ]
 )

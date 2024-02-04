@@ -1,8 +1,10 @@
 import time
 import numpy as np
+from typing import Callable
+import functools
 
 
-class Timer:
+class Calendar:
     def __init__(self, year: int = 2000, month: int = 1) -> None:
         self.year: int = year
         self.month: int = month
@@ -10,11 +12,11 @@ class Timer:
     def __str__(self) -> str:
         return f"{self.year}-{self.month}"
 
-    def __add__(self, other) -> "Timer":
+    def __add__(self, other) -> "Calendar":
         if isinstance(other, int):
             self.month += other
 
-        elif isinstance(other, Timer):
+        elif isinstance(other, Calendar):
             self.year += other.year
             self.month += other.month
 
@@ -31,11 +33,11 @@ class Timer:
 
         return self
 
-    def __sub__(self, other) -> "Timer":
+    def __sub__(self, other) -> "Calendar":
         if isinstance(other, int):
             self.month -= other
 
-        elif isinstance(other, Timer):
+        elif isinstance(other, Calendar):
             self.year -= other.year
             self.month -= other.month
 
@@ -63,6 +65,21 @@ class Timer:
 
     def set_month(self, month: int) -> None:
         self.month = month
+
+
+def timer(func: Callable):
+    """Decorator to measure the total execution time of a function over multiple calls."""
+
+    @functools.wraps(func)
+    def wrapper_timer(*args, **kwargs):
+        start_time = time.perf_counter()
+        value = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        wrapper_timer.total_time += end_time - start_time
+        return value
+
+    wrapper_timer.total_time = 0
+    return wrapper_timer
 
 
 def softmax(lst):
