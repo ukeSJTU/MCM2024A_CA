@@ -99,7 +99,7 @@ class Ecosystem:
                             )
 
         # when month is between 3-7, adult lampreys spawn and die
-        elif 3 <= self.timer.get_month() <= 7:
+        if 3 <= self.timer.get_month() <= 7:
             for row in range(self.height):
                 for col in range(self.width):
 
@@ -113,7 +113,11 @@ class Ecosystem:
 
                     MP = male_cnt / adult_cnt
 
-                    s = int(K * MP * (1 - MP) * self.prey_world[row][col])
+                    s = int(
+                        self.prey_world[row][col] * K * MP * (1 - MP)
+                    )  # put the self.prey_world[x][y] at the front of the equation
+                    # becuase we only implement * operator for PreySpecies * int or PreySpecies * float
+
                     self.lamprey_world[row][col][0] += s
 
                     # then we proportionally minus the number of adult lampreys fromage over 5, because mated lampreys die after reproduce
@@ -126,32 +130,35 @@ class Ecosystem:
                                     sex
                                 ]  #! 0.4 is randomly picked
                             )
-
+        """
         # when month is 6-3, 4-year-old larval lampreys grow into adult lampreys
-        elif 6 <= self.timer.get_month() or self.timer.get_month() <= 3:
+        if 6 <= self.timer.get_month() or self.timer.get_month() <= 3:
             for row in range(self.height):
                 for col in range(self.width):
                     self.lamprey_world[row][col][5] = copy.deepcopy(
                         self.lamprey_world[row][col][4]
                     )
-        else:
-            pass
+        """
 
         # every month, adult lampreys consume food
-        self.prey_world[row][col] = PreySpecies(
-            content=self.prey_world[row][col]
-            - (
-                self.lamprey_world[row][col][5][0]
-                + self.lamprey_world[row][col][5][1]
-                + self.lamprey_world[row][col][6][0]
-                + self.lamprey_world[row][col][6][1]
-                + self.lamprey_world[row][col][7][0]
-                + self.lamprey_world[row][col][7][1]
-            )
-            * 0.67
-            * 30
-            * random.uniform(0.95, 1.05)
-        )
+        print(self.lamprey_world)
+
+        for row in range(self.height):
+            for col in range(self.width):
+                self.prey_world[row][col] = PreySpecies(
+                    content=self.prey_world[row][col]
+                    - (
+                        self.lamprey_world[row][col][5][0]
+                        + self.lamprey_world[row][col][5][1]
+                        + self.lamprey_world[row][col][6][0]
+                        + self.lamprey_world[row][col][6][1]
+                        + self.lamprey_world[row][col][7][0]
+                        + self.lamprey_world[row][col][7][1]
+                    )
+                    * 0.67
+                    * 30
+                    * random.uniform(0.95, 1.05)
+                )
 
         # print(self.lamprey_world)
         # reproduce
