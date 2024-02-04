@@ -1,22 +1,15 @@
 import time
 
-# a Timer class to keep track of the time
-# record the year and month
-# implement str, add and sub methods
-# implement a property to get the current month
-# implement a setter to set the current month
-# implement a deleter to delete the current month
-
 
 class Timer:
-    def __init__(self, year: int = 2000, month: int = 1):
-        self.year = year
-        self.month = month
+    def __init__(self, year: int = 2000, month: int = 1) -> None:
+        self.year: int = year
+        self.month: int = month
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.year}-{self.month}"
 
-    def __add__(self, other):
+    def __add__(self, other) -> "Timer":
         if isinstance(other, int):
             self.month += other
 
@@ -29,7 +22,7 @@ class Timer:
             self.month += other[1]
 
         else:
-            raise ValueError("The other should be an integer.")
+            raise ValueError(f"Type{type(other)} is not supported.")
 
         if self.month > 12:
             self.year += 1
@@ -37,7 +30,7 @@ class Timer:
 
         return self
 
-    def __sub__(self, other):
+    def __sub__(self, other) -> "Timer":
         if isinstance(other, int):
             self.month -= other
 
@@ -50,7 +43,7 @@ class Timer:
             self.month -= other[1]
 
         else:
-            raise ValueError("The other should be an integer.")
+            raise ValueError(f"Type{type(other)} is not supported.")
 
         if self.month < 1:
             self.year -= 1
@@ -58,14 +51,14 @@ class Timer:
 
         return self
 
-    def get_year(self):
+    def get_year(self) -> int:
         return self.year
 
-    def set_year(self, year):
+    def set_year(self, year: int) -> None:
         self.year = year
 
-    def get_month(self):
+    def get_month(self) -> int:
         return self.month
 
-    def set_month(self, month):
+    def set_month(self, month: int) -> None:
         self.month = month
