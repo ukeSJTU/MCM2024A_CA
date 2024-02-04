@@ -1,4 +1,5 @@
 import time
+import numpy as np
 
 
 class Timer:
@@ -62,3 +63,15 @@ class Timer:
 
     def set_month(self, month: int) -> None:
         self.month = month
+
+
+def softmax(lst):
+    # Convert the list to a NumPy array for efficient computation
+    arr = np.array(lst)
+    # Exponentiate each element
+    exp_arr = np.exp(arr - np.max(arr))  # Subtracting max for numerical stability
+    # Calculate the sum of exponentiated values
+    sum_exp_arr = np.sum(exp_arr)
+    # Divide each exponentiated value by the sum to get probabilities
+    probs = exp_arr / sum_exp_arr
+    return probs
