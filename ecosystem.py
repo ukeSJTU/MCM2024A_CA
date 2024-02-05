@@ -16,7 +16,7 @@ from matplotlib.colors import Normalize
 import seaborn as sns
 
 
-from utils import Calendar
+from utils import Calendar, nanmax_pooling, nanmean_pooling, resize_with_pooling
 from species import LampreySpecies, PreySpecies, PredatorSpecies
 from world import LampreyWorld, PreyWorld, PredatorWorld, Terrain
 
@@ -33,6 +33,8 @@ class Ecosystem:
         prey_world: PreyWorld,
         predator_world: PredatorWorld,
         terrain: Terrain,
+        pool_size: int = 10,
+        pool_method: Literal["max", "mean"] = "max",
         output_dir: Path = Path("./output") / str(int(time.time())),
         calendar: Calendar = Calendar(2000, 1),
     ):
@@ -41,6 +43,8 @@ class Ecosystem:
         self.predator_world = predator_world
         self.terrain = terrain
 
+        self.pool_size = pool_size  # Adjust based on desired granularity
+        self.pool_method = pool_method
         self.output_dir = output_dir  # the directory to save the output
 
         self.output_prey_dir = self.output_dir / "prey"
@@ -115,10 +119,33 @@ class Ecosystem:
 
         male_percentage_data = np.array(
             [
-                [cell.describe()[2] / cell.describe()[0] for cell in row]
+                [
+                    (
+                        cell.describe()[2] / cell.describe()[0]
+                        if cell.describe()[0] != 0
+                        else np.nan
+                    )
+                    for cell in row
+                ]
                 for row in self.lamprey_world.matrix
             ]
         )
+        larval_adult_ratio_data = np.array(
+            [
+                [
+                    (
+                        cell.describe()[0] / cell.describe()[1]
+                        if cell.describe()[1] != 0
+                        else np.nan
+                    )
+                    for cell in row
+                ]
+                for row in self.lamprey_world.matrix
+            ]
+        )
+
+        # male_percentage_data_
+
         prey_data = np.array(
             [[cell.content for cell in row] for row in self.prey_world.matrix]
         )
@@ -127,15 +154,34 @@ class Ecosystem:
         )
 
         # max/mean pool the data
-        pool_size = 10  # Adjust based on desired granularity
-        male_percentage_data_pooled = self.apply_pooling(
-            male_percentage_data, size=pool_size, method="max"
+        # pool_size = 10  # Adjust based on desired granularity
+        male_percentage_data_pooled = resize_with_pooling(
+            data=male_percentage_data,
+            new_size=(self.pool_size, self.pool_size),
+            method=self.pool_method,
         )
-        prey_data_pooled = self.apply_pooling(
-            prey_data, size=pool_size, method="max"
+        male_percentage_mask = np.isnan(male_percentage_data_pooled)
+        # male_percentage_data_pooled = self.apply_pooling(
+        #     male_percentage_data, size=self.pool_size, method=self.pool_method
+        # )
+
+        larval_adult_ratio_data_pooled = resize_with_pooling(
+            data=larval_adult_ratio_data,
+            new_size=(self.pool_size, self.pool_size),
+            method=self.pool_method,
+        )
+        larval_adult_ratio_mask = np.isnan(larval_adult_ratio_data_pooled)
+
+        prey_data_pooled = resize_with_pooling(
+            prey_data,
+            new_size=(self.pool_size, self.pool_size),
+            method=self.pool_method,
         )  # or 'mean'
-        predator_data_pooled = self.apply_pooling(
-            predator_data, size=pool_size, method="max"
+
+        predator_data_pooled = resize_with_pooling(
+            predator_data,
+            new_size=(self.pool_size, self.pool_size),
+            method=self.pool_method,
         )
 
         # Normalize the data to scale between 0 and 255
@@ -143,14 +189,24 @@ class Ecosystem:
             vmin=0,
             vmax=max(
                 male_percentage_data_pooled.max(),
+                larval_adult_ratio_data_pooled.max(),
                 prey_data_pooled.max(),
                 predator_data_pooled.max(),
             ),
         )
         male_percentage_normalized = norm(male_percentage_data_pooled) * 255
+        larval_adult_ratio_normalized = norm(larval_adult_ratio_data_pooled) * 255
         prey_normalized = norm(prey_data_pooled) * 255
         predator_normalized = norm(predator_data_pooled) * 255
 
+        # sns.heatmap(
+        #     male_percentage_data_pooled,
+        #     ax=self.axes[0][0],
+        #     square=True,
+        #     cmap="coolwarm",
+        #     center=1,
+        #     # cbar_kws={"label": "Sex Ratio (Males/Females)"},
+        # )
         self.axes[0][0].imshow(
             male_percentage_normalized,
             cmap="viridis",
@@ -158,8 +214,8 @@ class Ecosystem:
         self.axes[0][0].set_title("Male Percentage")
         self.axes[0][0].set_axis_off()
 
-        self.axes[0][1].imshow(prey_normalized, cmap="binary")
-        self.axes[0][1].set_title("MP")
+        self.axes[0][1].imshow(larval_adult_ratio_normalized, cmap="binary")
+        self.axes[0][1].set_title("Larval/Adult Ratio")
         self.axes[0][1].set_axis_off()
 
         self.axes[1][0].imshow(prey_normalized, cmap="PuBu")

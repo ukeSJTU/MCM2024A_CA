@@ -2,6 +2,7 @@ import time
 import numpy as np
 from typing import Callable
 import functools
+from scipy.ndimage import generic_filter
 
 
 class Calendar:
@@ -92,3 +93,44 @@ def softmax(lst):
     # Divide each exponentiated value by the sum to get probabilities
     probs = exp_arr / sum_exp_arr
     return probs
+
+
+def nanmean_pooling(data, size=10):
+    return generic_filter(data, np.nanmean, size=size, mode="reflect")
+
+
+def nanmax_pooling(data, size=10):
+    return generic_filter(data, np.nanmax, size=size, mode="reflect")
+
+
+def resize_with_pooling(data, new_size=(5, 5), method="mean"):
+    """
+    Resize a matrix to new_size using pooling.
+
+    Parameters:
+    - data: 2D numpy array to pool.
+    - new_size: tuple, the size of the output matrix.
+    - method: str, either 'max' or 'mean' for the type of pooling.
+
+    Returns:
+    - Pooled and resized matrix.
+    """
+    output = np.zeros(new_size)
+    step_x = data.shape[0] / new_size[0]
+    step_y = data.shape[1] / new_size[1]
+
+    for i in range(new_size[0]):
+        for j in range(new_size[1]):
+            block = data[
+                int(i * step_x) : int((i + 1) * step_x),
+                int(j * step_y) : int((j + 1) * step_y),
+            ]
+
+            if method == "max":
+                # Use np.nanmax for max pooling to ignore np.nan values
+                output[i, j] = np.nanmax(block)
+            elif method == "mean":
+                # Use np.nanmean for mean pooling to ignore np.nan values
+                output[i, j] = np.nanmean(block)
+
+    return output

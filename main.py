@@ -11,12 +11,13 @@ from abc import abstractmethod, ABC
 import sys
 from tqdm import tqdm
 
-from utils import Timer
+from utils import Calendar
 from species import LampreySpecies, PreySpecies, PredatorSpecies
-from world import LampreyWorld, PreyWorld, PredatorWorld
+from world import LampreyWorld, PreyWorld, PredatorWorld, Terrain
 from ecosystem import Ecosystem
 
 plt.ion()
+plt.tight_layout()
 
 # Define the file where you want to redirect the output
 output_file = open("output.txt", "w")
@@ -47,8 +48,27 @@ output_dir.mkdir(parents=True, exist_ok=True)
 
 
 def main():
-    WORLD_WIDTH = 100
-    WORLD_HEIGHT = 100
+    WORLD_WIDTH = 20
+    WORLD_HEIGHT = 20
+
+    MIN_PREY_NUM = 800
+    MAX_PREY_NUM = 1000
+
+    MIN_PREDATOR_NUM = 200
+    MAX_PREDATOR_NUM = 400
+
+    PREY_BORN_RATE = 0.1
+    PREY_DEATH_RATE = 0.08
+    PREY_PREY_RATE = 0.1
+
+    PREDATOR_BORN_RATE = 0.1
+    PREDATOR_DEATH_RATE = 0.08
+    PREDATOR_PREY_RATE = 0.1
+
+    N_ITER = 24
+
+    POOLING = "max"  # or "mean", the pooling strategy for ecosystem visualization
+    POOL_SIZE = 10  # 0.1 * WORLD_WIDTH
 
     # Create the lamprey world
     init_lamprey = LampreySpecies()
@@ -69,39 +89,56 @@ def main():
         height=WORLD_HEIGHT,
     )
     # lamprey_world = LampreyWorld(0, 100, 100, init_lamprey)
-    print(lamprey_world)
+    # print(lamprey_world)
 
     # Create the food world
     prey_world = PreyWorld(
-        init_value_range=(800, 1000),
+        init_value_range=(MIN_PREY_NUM, MAX_PREY_NUM),
         width=WORLD_WIDTH,
         height=WORLD_HEIGHT,
-        born_rate=0.1,
-        death_rate=0.08,
-        prey_rate=0.1,
+        born_rate=PREY_BORN_RATE,
+        death_rate=PREY_DEATH_RATE,
+        prey_rate=PREY_PREY_RATE,
     )
-    print(prey_world)
+    # print(prey_world)
 
     # Create the predator world
     predator_world = PredatorWorld(
-        init_value_range=(200, 400),
+        init_value_range=(MIN_PREDATOR_NUM, MAX_PREDATOR_NUM),
         width=WORLD_WIDTH,
         height=WORLD_HEIGHT,
-        born_rate=0.1,
-        death_rate=0.08,
-        prey_rate=0.1,
+        born_rate=PREDATOR_BORN_RATE,
+        death_rate=PREDATOR_DEATH_RATE,
+        prey_rate=PREDATOR_PREY_RATE,
+    )
+
+    terrain = Terrain(
+        width=WORLD_WIDTH,
+        height=WORLD_HEIGHT,
     )
 
     ecosystem = Ecosystem(
         lamprey_world=lamprey_world,
         prey_world=prey_world,
         predator_world=predator_world,
+        terrain=terrain,
     )
 
-    n_iter = 3 * 120
+    n_iter = N_ITER
+    step_time = 0
+    vis_time = 0
+
     for i in tqdm(range(n_iter)):
+        a = time.time()
         ecosystem.step()
-        ecosystem.visualize(save=True)
+        b = time.time()
+        step_time += b - a
+        ecosystem.visualize(save=True, show=True)
+        c = time.time()
+        vis_time += c - b
+
+    print(step_time)
+    print(vis_time)
 
 
 if __name__ == "__main__":

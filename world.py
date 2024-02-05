@@ -277,6 +277,8 @@ class Terrain(World):
 
         self.create_terrain()
 
+        self.to_sea_dir = [0, -1]  # the direction to move from the lake to the sea
+
     def create_terrain(self):
         # make an example terrain where the left half is ocean(0) and the right half is lake(1)
         self.matrix = [
