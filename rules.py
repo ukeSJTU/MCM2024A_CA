@@ -30,14 +30,23 @@ class Rule:
 class RuleSet:
     def __init__(self, rules: List[Rule]):
         self.rules = rules
+        self.time = [0 for _ in range(len(rules))]
 
     def apply(self, ecosystem: "Ecosystem"):
-        for rule in self.rules:
+        for i, rule in enumerate(self.rules):
             if rule.condition(ecosystem):
                 rule.action(ecosystem)
+                self.time[i] += rule.get_time()
+
+    def __str__(self):
+        l = len(self.rules)
+        s = "\n".join(
+            [self.rules[i].description + ": " + str(self.time[i]) for i in range(l)]
+        )
+        return s
 
 
-def which_month(n: Union[int, List[int]]):
+def condition_which_month(n: Union[int, List[int]]) -> Callable[["Ecosystem"], bool]:
     """
     Returns a condition function that checks if the current month matches `n`, where `n` can be an integer or a list of integers.
 
@@ -60,7 +69,7 @@ def which_month(n: Union[int, List[int]]):
     return condition
 
 
-def action_grow_older(ecosystem: "Ecosystem"):
+def action_lamprey_increase_age(ecosystem: "Ecosystem"):
     for row in range(ecosystem.height):
         for col in range(ecosystem.width):
             for age in range(7, 0, -1):
@@ -91,7 +100,7 @@ def action_grow_older(ecosystem: "Ecosystem"):
     ecosystem.debug(1)
 
 
-def action_spawn_and_die(ecosystem: "Ecosystem"):
+def action_lamprey_spawn_and_die(ecosystem: "Ecosystem"):
     K = 48
     for row in range(ecosystem.height):
         for col in range(ecosystem.width):
@@ -113,7 +122,8 @@ def action_spawn_and_die(ecosystem: "Ecosystem"):
                 * (1 - MP)
                 * adult_cnt
                 * adult_cnt
-            )  # put the ecosystem.prey_world[x][y] at the front of the equation
+            )
+            # put the ecosystem.prey_world[x][y] at the front of the equation
             # becuase we only implement * operator for PreySpecies * int or PreySpecies * float
             # print(f"MP: {MP}, s: {s}, prey: {ecosystem.prey_world[row][col]}")
             ecosystem.lamprey_world[row][col][0] += s
@@ -157,22 +167,7 @@ def action_predation(ecosystem: "Ecosystem"):
     ecosystem.debug(4)
 
 
-# Rule 1: when month is 3, every lamprey grows up by 1 year and the 4-year-old larval lampreys grow into adult lampreys
-# PS: we assume that every lamprey lives 7 years. The first 4 years are larval lampreys, the last 3 years are adult lampreys
-#     here, we handle the case of metamorphosis
-rule_grow_older = Rule(which_month(3), action_grow_older)
-
-# Rule 2: when month is between 3-7, adult lampreys spawn and die
-rule_spawn_and_die = Rule(which_month([3, 4, 5, 6, 7]), action_spawn_and_die)
-
-# Rule 4: every month, adult lampreys prey from the prey world
-# every month, adult lampreys consume food
-rule_predation = Rule(
-    which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), action_predation
-)
-
-
-def action_predated(ecosystem: "Ecosystem"):
+def action_lamprey_predated(ecosystem: "Ecosystem"):
     for row in range(ecosystem.height):
         for col in range(ecosystem.width):
             ecosystem.lamprey_world[row][col][5][0] = int(
@@ -202,14 +197,8 @@ def action_predated(ecosystem: "Ecosystem"):
     ecosystem.debug(5)
 
 
-# Rule 5: every month, adult lampreys may be eaten by predator world
-rule_predated = Rule(
-    which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), action_predated
-)
-
-
 # Rule 6: every month, lampreys may die
-def action_death(ecosystem: "Ecosystem"):
+def action_lamprey_death(ecosystem: "Ecosystem"):
     for row in range(ecosystem.height):
         for col in range(ecosystem.width):
             for age in range(7, 0, -1):
@@ -232,9 +221,6 @@ def action_death(ecosystem: "Ecosystem"):
     ecosystem.debug(6)
 
 
-rule_death = Rule(which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), action_death)
-
-
 # Rule 7: every month, the prey world reproduces and dies
 def action_prey_reproduce(ecosystem: "Ecosystem"):
     for row in range(ecosystem.height):
@@ -244,22 +230,12 @@ def action_prey_reproduce(ecosystem: "Ecosystem"):
     ecosystem.debug(7)
 
 
-rule_prey_reproduce = Rule(
-    which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), action_prey_reproduce
-)
-
-
 def action_predator_reproduce(ecosystem: "Ecosystem"):
     for row in range(ecosystem.height):
         for col in range(ecosystem.width):
             ecosystem.predator_world[row][col].born()
             ecosystem.predator_world[row][col].die()
     ecosystem.debug(8)
-
-
-rule_predator_reproduce = Rule(
-    which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), action_predator_reproduce
-)
 
 
 def action_prey_migration(ecosystem: "Ecosystem"):
@@ -350,15 +326,6 @@ def action_predator_migration(ecosystem: "Ecosystem"):
     ecosystem.debug(10)
 
 
-rule_prey_migration = Rule(
-    which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), action_prey_migration
-)
-
-rule_predator_migration = Rule(
-    which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), action_predator_migration
-)
-
-
 def action_larval_lamprey_migration(ecosystem: "Ecosystem"):
     # the larval lampreys migrate to the cells with more food
     pass
@@ -405,21 +372,86 @@ def action_adult_lamprey_migration(ecosystem: "Ecosystem"):
                         ecosystem.lamprey_world[row][col][age][sex] -= n_migration
 
 
+# Rule 1: when month is 3, every lamprey grows up by 1 year and the 4-year-old larval lampreys grow into adult lampreys
+# PS: we assume that every lamprey lives 7 years. The first 4 years are larval lampreys, the last 3 years are adult lampreys
+#     here, we handle the case of metamorphosis
+rule_grow_older = Rule(
+    condition=condition_which_month(3),
+    action=action_lamprey_increase_age,
+    description="All lampreys grow older",
+)
+
+# Rule 2: when month is between 3-7, adult lampreys spawn and die
+rule_lamprey_spawn_and_die = Rule(
+    condition=condition_which_month([3, 4, 5, 6, 7]),
+    action=action_lamprey_spawn_and_die,
+    description="Adult lampreys spawn and die",
+)
+
+# Rule 4: every month, adult lampreys prey from the prey world
+# every month, adult lampreys consume food
+rule_predation = Rule(
+    condition=condition_which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+    action=action_predation,
+    description="Adult lampreys prey onto the prey world",
+)
+
 rule_larval_lamprey_migration = Rule(
-    which_month([1, 2, 3, 6, 7, 8, 9, 10, 11, 12]), action_larval_lamprey_migration
+    condition=condition_which_month([1, 2, 3, 6, 7, 8, 9, 10, 11, 12]),
+    action=action_larval_lamprey_migration,
+    description="Larval lampreys migrate",
 )
 
 rule_adult_lamprey_migration = Rule(
-    which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), action_adult_lamprey_migration
+    condition=condition_which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+    action=action_adult_lamprey_migration,
+    description="Adult lampreys migrate",
+)
+
+rule_lamprey_death = Rule(
+    condition=condition_which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+    action=action_lamprey_death,
+    description="All lampreys die",
+)
+
+# Rule 5: every month, adult lampreys may be eaten by predator world
+rule_lamprey_predated = Rule(
+    condition=condition_which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+    action=action_lamprey_predated,
+    description="Adult lampreys may be preyed by predator world",
+)
+
+rule_predator_reproduce = Rule(
+    condition=condition_which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+    action=action_predator_reproduce,
+    description="Predator world reproduces",
+)
+
+rule_prey_migration = Rule(
+    condition=condition_which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+    action=action_prey_migration,
+    description="Prey world migrates",
+)
+
+rule_predator_migration = Rule(
+    condition=condition_which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+    action=action_predator_migration,
+    description="Predator world migrates",
+)
+
+rule_prey_reproduce = Rule(
+    condition=condition_which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+    action=action_prey_reproduce,
+    description="Prey world reproduces",
 )
 
 rulesets = RuleSet(
     [
         rule_grow_older,
-        rule_spawn_and_die,
+        rule_lamprey_spawn_and_die,
         rule_predation,
-        rule_predated,
-        rule_death,
+        rule_lamprey_predated,
+        rule_lamprey_death,
         rule_prey_reproduce,
         rule_predator_reproduce,
         rule_prey_migration,
