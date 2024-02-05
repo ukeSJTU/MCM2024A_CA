@@ -6,6 +6,7 @@ import random
 from typing import Union, Literal, Tuple
 import time
 from pathlib import Path
+import pandas as pd
 import copy
 from scipy.ndimage import uniform_filter, maximum_filter
 import math
@@ -19,6 +20,7 @@ import seaborn as sns
 from utils import Calendar, nanmax_pooling, nanmean_pooling, resize_with_pooling
 from species import LampreySpecies, PreySpecies, PredatorSpecies
 from world import LampreyWorld, PreyWorld, PredatorWorld, Terrain
+from metrics import Metrics
 
 # from rules import rulesets
 import rules
@@ -54,6 +56,8 @@ class Ecosystem:
         self.output_prey_dir.mkdir(parents=True, exist_ok=True)
         self.output_predator_dir.mkdir(parents=True, exist_ok=True)
         self.output_lamprey_dir.mkdir(parents=True, exist_ok=True)
+
+        self.metrics = Metrics(parent=self)
 
         assert (
             self.lamprey_world.width
@@ -100,6 +104,11 @@ class Ecosystem:
         # 7. the prey of lampreys will reproduce every year. The number of prey they reproduce is 2 times the number of lampreys they eat
 
         rules.rulesets.apply(ecosystem=self)
+
+        print(self.metrics.get_metrics("lamprey_density"))
+        print(self.metrics.get_metrics("prey_density"))
+        print(self.metrics.get_metrics("predator_density"))
+
         self.iter += 1
         self.calendar += 1
 
@@ -233,6 +242,36 @@ class Ecosystem:
             plt.pause(0.1)
 
         return
+
+    def save_metrics(self):
+        # save the metrics to a csv file
+        # and plot the metrics
+
+        metrics = self.metrics.get_metrics()
+        print(metrics)
+        df = pd.DataFrame(metrics)
+        df.to_csv(str(self.output_dir / "metrics.csv"), index=False)
+
+        fig = plt.figure()
+
+        # need to scale the data to the same scale
+        metrics["lamprey_density"] = np.array(metrics["lamprey_density"]) / np.max(
+            np.array(metrics["lamprey_density"])
+        )
+        metrics["prey_density"] = np.array(metrics["prey_density"]) / np.max(
+            np.array(metrics["prey_density"])
+        )
+        metrics["predator_density"] = np.array(metrics["predator_density"]) / np.max(
+            np.array(metrics["predator_density"])
+        )
+
+        # plot the metrics and save the fig
+        plt.plot(metrics["lamprey_density"], label="Lamprey Density")
+        plt.plot(metrics["prey_density"], label="Prey Density")
+        plt.plot(metrics["predator_density"], label="Predator Density")
+        plt.legend()
+        plt.savefig(str(self.output_dir / "metrics.png"))
+        plt.show()
 
     @classmethod
     def apply_pooling(self, data, size=5, method: Literal["max", "mean"] = "max"):
