@@ -159,9 +159,9 @@ def action_predation(ecosystem: "Ecosystem"):
                     + ecosystem.lamprey_world[row][col][7][0]
                     + ecosystem.lamprey_world[row][col][7][1]
                 )
-                * 0.001
-                * 30
-                * random.uniform(0.95, 1.05)
+                * 0.001  # ecosystem.lamprey_world.prey_rate
+                * ecosystem.calendar.get_days()
+                # * random.uniform(0.95, 1.05)
             )
 
             # if all the food in this cell is gone, the lampreys die immediately
@@ -175,30 +175,19 @@ def action_predation(ecosystem: "Ecosystem"):
 def action_lamprey_predated(ecosystem: "Ecosystem"):
     for row in range(ecosystem.height):
         for col in range(ecosystem.width):
-            ecosystem.lamprey_world[row][col][5][0] = int(
-                ecosystem.lamprey_world[row][col][5][0]
-                * (1 - ecosystem.predator_world[row][col] * 0.001)
-            )
-            ecosystem.lamprey_world[row][col][5][1] = int(
-                ecosystem.lamprey_world[row][col][5][1]
-                * (1 - ecosystem.predator_world[row][col] * 0.001)
-            )
-            ecosystem.lamprey_world[row][col][6][0] = int(
-                ecosystem.lamprey_world[row][col][6][0]
-                * (1 - ecosystem.predator_world[row][col] * 0.001)
-            )
-            ecosystem.lamprey_world[row][col][6][1] = int(
-                ecosystem.lamprey_world[row][col][6][1]
-                * (1 - ecosystem.predator_world[row][col] * 0.001)
-            )
-            ecosystem.lamprey_world[row][col][7][0] = int(
-                ecosystem.lamprey_world[row][col][7][0]
-                * (1 - ecosystem.predator_world[row][col] * 0.001)
-            )
-            ecosystem.lamprey_world[row][col][7][1] = int(
-                ecosystem.lamprey_world[row][col][7][1]
-                * (1 - ecosystem.predator_world[row][col] * 0.001)
-            )
+            for age in [5, 6, 7]:
+                for sex in [0, 1]:
+                    # here we multiply 0.16 to because we assume that the predator prey evenly for lampreys of different age or sex
+                    n_lamprey_preyed_by_predator = int(
+                        ecosystem.predator_world.prey_rate
+                        * ecosystem.predator_world[row][col]
+                        * 0.16
+                    )
+                    # print(n_lamprey_preyed_by_predator)
+                    ecosystem.lamprey_world[row][col][age][sex] = int(
+                        ecosystem.lamprey_world[row][col][age][sex]
+                        - n_lamprey_preyed_by_predator
+                    )
     ecosystem.debug(5)
 
 

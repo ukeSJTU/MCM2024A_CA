@@ -68,6 +68,20 @@ class Calendar:
     def set_month(self, month: int) -> None:
         self.month = month
 
+    def get_days_of_month(self, month: int) -> int:
+        if month in [1, 3, 5, 7, 8, 10, 12]:
+            return 31
+        elif month in [4, 6, 9, 11]:
+            return 30
+        else:
+            if self.year % 4 == 0 and self.year % 100 != 0 or self.year % 400 == 0:
+                return 29
+            else:
+                return 28
+
+    def get_days(self) -> int:
+        return self.get_days_of_month(self.month)
+
 
 def timer(func: Callable):
     """Decorator to measure the total execution time of a function over multiple calls."""
