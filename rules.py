@@ -1,7 +1,7 @@
 from typing import Callable, List, Union, TYPE_CHECKING
 import random
 import copy
-from utils import softmax, timer
+from utils import softmax, timer, calculate_male_percentage
 from species import LampreySpecies, PreySpecies
 
 if TYPE_CHECKING:
@@ -39,9 +39,11 @@ class RuleSet:
                 self.time[i] += rule.get_time()
 
     def __str__(self):
-        l = len(self.rules)
         s = "\n".join(
-            [self.rules[i].description + ": " + str(self.time[i]) for i in range(l)]
+            [
+                f"Rule {i}: {self.time[i]}s | {self.rules[i].description}"
+                for i in range(len(self.rules))
+            ]
         )
         return s
 
@@ -87,15 +89,18 @@ def action_lamprey_increase_age(ecosystem: "Ecosystem"):
                     如果周围环境中平均每年有≥245条(365*0.67)salmonid，认为⻝物丰富，雄
                     性占⽐偏向56%。平均每年＜245条(365*0.67)salmonid，认为⻝物短缺，雄性占⽐偏向78%
                     """
-                    if ecosystem.prey_world[row][col] >= 245:
-                        sex_ratio = 0.56 * random.uniform(0.95, 1.05)
-                    else:
-                        sex_ratio = 0.78 * random.uniform(0.95, 1.05)
+                    male_percentage = calculate_male_percentage(
+                        value=ecosystem.prey_world[row][col].content, use_random=True
+                    )
+                    # if ecosystem.prey_world[row][col] >= 245:
+                    #     sex_ratio = 0.56 * random.uniform(0.95, 1.05)
+                    # else:
+                    #     sex_ratio = 0.78 * random.uniform(0.95, 1.05)
                     ecosystem.lamprey_world[row][col][5][0] = int(
-                        ecosystem.lamprey_world[row][col][4] * sex_ratio
+                        ecosystem.lamprey_world[row][col][4] * male_percentage
                     )
                     ecosystem.lamprey_world[row][col][5][1] = int(
-                        ecosystem.lamprey_world[row][col][4] * (1 - sex_ratio)
+                        ecosystem.lamprey_world[row][col][4] * (1 - male_percentage)
                     )
     ecosystem.debug(1)
 

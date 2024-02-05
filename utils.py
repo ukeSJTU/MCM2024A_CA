@@ -3,6 +3,7 @@ import numpy as np
 from typing import Callable
 import functools
 from scipy.ndimage import generic_filter
+import random
 
 
 class Calendar:
@@ -134,3 +135,30 @@ def resize_with_pooling(data, new_size=(5, 5), method="mean"):
                 output[i, j] = np.nanmean(block)
 
     return output
+
+
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+
+def calculate_male_percentage(
+    value,
+    threshold=245,
+    min_percentage=0.56,
+    max_percentage=0.78,
+    use_random: bool = False,
+):
+    # the smaller the scale_factor, the smoother the transition is
+    scale_factor = 0.08
+    normalized_value = (value - threshold) * scale_factor
+
+    transition = sigmoid(normalized_value)
+
+    # map the output of Sigmoid to [min, max]
+    male_percentage = max_percentage - (max_percentage - min_percentage) * transition
+
+    # apply random noise, optional
+    if use_random:
+        male_percentage *= random.uniform(0.98, 1.02)
+
+    return male_percentage
