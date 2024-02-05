@@ -169,7 +169,7 @@ class PreySpecies(BaseSpecies):
         self.content = self.content * (1 - self.death_rate)
 
     def born(self):
-        self.content = self.content * (1 + self.prey_rate)
+        self.content = self.content * (1 + self.born_rate)
 
 
 class PredatorSpecies(BaseSpecies):
@@ -182,7 +182,7 @@ class PredatorSpecies(BaseSpecies):
         self.content = self.content * (1 - self.death_rate)
 
     def born(self):
-        self.content = self.content * (1 + self.prey_rate)
+        self.content = self.content * (1 + self.born_rate)
 
 
 class LampreySpecies:
