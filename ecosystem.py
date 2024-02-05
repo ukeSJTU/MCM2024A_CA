@@ -39,6 +39,7 @@ class Ecosystem:
         pool_method: Literal["max", "mean"] = "max",
         output_dir: Path = Path("./output") / str(int(time.time())),
         calendar: Calendar = Calendar(2000, 1),
+        rulesets: rules.RuleSet = rules.rulesets,
     ):
         self.lamprey_world = lamprey_world
         self.prey_world = prey_world
@@ -58,6 +59,7 @@ class Ecosystem:
         self.output_lamprey_dir.mkdir(parents=True, exist_ok=True)
 
         self.metrics = Metrics(parent=self)
+        self.rulesets = rulesets
 
         assert (
             self.lamprey_world.width
@@ -103,7 +105,7 @@ class Ecosystem:
         # 6. the mated lampreys will die after they reproduce
         # 7. the prey of lampreys will reproduce every year. The number of prey they reproduce is 2 times the number of lampreys they eat
 
-        rules.rulesets.apply(ecosystem=self)
+        self.rulesets.apply(ecosystem=self)
 
         print(self.metrics.get_metrics("lamprey_density"))
         print(self.metrics.get_metrics("prey_density"))
