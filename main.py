@@ -5,6 +5,7 @@ from pathlib import Path
 import random
 import time
 from pathlib import Path
+import pandas as pd
 import copy
 import math
 from abc import abstractmethod, ABC
@@ -15,6 +16,13 @@ from utils import Calendar
 from species import LampreySpecies, PreySpecies, PredatorSpecies
 from world import LampreyWorld, PreyWorld, PredatorWorld, Terrain
 from ecosystem import Ecosystem
+
+import warnings
+
+# Convert specific warnings to exceptions
+# warnings.filterwarnings("error", category=RuntimeWarning)
+# filter RuntimeWarning
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 plt.ion()
 plt.tight_layout()
@@ -32,7 +40,8 @@ sys.stdout = output_file
 
 random.seed(42)
 
-output_dir = Path("./output") / str(int(time.time()))
+t = time.time()
+output_dir = Path("./output") / str(int(t))
 output_dir.mkdir(parents=True, exist_ok=True)
 
 
@@ -48,24 +57,24 @@ output_dir.mkdir(parents=True, exist_ok=True)
 
 
 def main():
-    WORLD_WIDTH = 20
-    WORLD_HEIGHT = 20
+    WORLD_WIDTH = 100
+    WORLD_HEIGHT = 100
 
-    MIN_PREY_NUM = 800
-    MAX_PREY_NUM = 1000
+    MIN_PREY_NUM = 100
+    MAX_PREY_NUM = 400
 
-    MIN_PREDATOR_NUM = 200
-    MAX_PREDATOR_NUM = 400
+    MIN_PREDATOR_NUM = 20
+    MAX_PREDATOR_NUM = 40
 
-    PREY_BORN_RATE = 0.1
-    PREY_DEATH_RATE = 0.08
+    PREY_BORN_RATE = 0.2
+    PREY_DEATH_RATE = 0.05
     PREY_PREY_RATE = 0.1
 
     PREDATOR_BORN_RATE = 0.1
-    PREDATOR_DEATH_RATE = 0.08
+    PREDATOR_DEATH_RATE = 0.091
     PREDATOR_PREY_RATE = 0.1
 
-    N_ITER = 24
+    N_ITER = 240
 
     POOLING = "max"  # or "mean", the pooling strategy for ecosystem visualization
     POOL_WIDTH_SIZE = 10  # 0.1 * WORLD_WIDTH
@@ -78,9 +87,9 @@ def main():
     init_lamprey[2] = 140
     init_lamprey[3] = 80
     init_lamprey[4] = 160
-    init_lamprey[5] = [500, 300]
-    init_lamprey[6] = [180, 230]
-    init_lamprey[7] = [10, 40]
+    init_lamprey[5] = [50, 30]
+    init_lamprey[6] = [18, 23]
+    init_lamprey[7] = [20, 40]
 
     # {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: [40, 40], 6: [20, 20], 7: [0, 0]}
     lamprey_world = LampreyWorld(
@@ -123,8 +132,10 @@ def main():
         prey_world=prey_world,
         predator_world=predator_world,
         terrain=terrain,
+        output_dir=output_dir,
         pool_size=(POOL_WIDTH_SIZE, POOL_HEIGHT_SIZE),
         pool_method=POOLING,
+        plot_iter=6,
     )
 
     n_iter = N_ITER
@@ -136,7 +147,7 @@ def main():
         ecosystem.step()
         b = time.time()
         step_time += b - a
-        ecosystem.visualize(save=True, show=True)
+        # ecosystem.visualize(save=True, show=True)
         c = time.time()
         vis_time += c - b
 
@@ -144,6 +155,11 @@ def main():
     print(vis_time)
 
     ecosystem.save_metrics()
+
+    print(ecosystem.rulesets)
+
+    info_df = pd.DataFrame(ecosystem.info_dict)
+    info_df.to_csv(output_dir / f"{str(int(t))}_info.csv", index=False)
 
 
 if __name__ == "__main__":

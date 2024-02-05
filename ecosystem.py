@@ -35,11 +35,12 @@ class Ecosystem:
         prey_world: PreyWorld,
         predator_world: PredatorWorld,
         terrain: Terrain,
+        output_dir: Path,
         pool_size: Tuple[int, int],
         pool_method: Literal["max", "mean"] = "max",
-        output_dir: Path = Path("./output") / str(int(time.time())),
         calendar: Calendar = Calendar(2000, 1),
         rulesets: rules.RuleSet = rules.rulesets,
+        plot_iter: int = 12,
     ):
         self.lamprey_world = lamprey_world
         self.prey_world = prey_world
@@ -75,11 +76,33 @@ class Ecosystem:
         self.width = self.lamprey_world.width
         self.height = self.lamprey_world.height
 
+        self.plot_iter = plot_iter
+
         self.fig, self.axes = plt.subplots(2, 2, figsize=(10, 5))
         self.cbars = []
 
         self.iter = 0
         self.calendar = calendar
+
+        # use a dataframe to keep track of the values of each world in the ecosystem
+        self.info_dict = {
+            "iter": [],
+            "n_lamprey": [],
+            "n_prey": [],
+            "n_predator": [],
+            "n_adult_lamprey": [],
+            "n_larval_lamprey": [],
+            "n_male_lamprey": [],
+            "n_female_lamprey": [],
+            "0_age": [],
+            "1_age": [],
+            "2_age": [],
+            "3_age": [],
+            "4_age": [],
+            "5_age": [],
+            "6_age": [],
+            "7_age": [],
+        }
 
     def debug(self, n):
         """_summary_
@@ -87,9 +110,9 @@ class Ecosystem:
         Args:
             n (int): rule index
         """
-        print(f"Iteration {self.iter}, {self.calendar}, Rule: {n}")
+        print(f"Iteration {self.iter}, {self.calendar}, Rule: {n} ")
         print(self.lamprey_world)
-        print(self.prey_world)
+        # print(self.prey_world)
         print(self.predator_world)
 
     def step(self):
@@ -114,6 +137,78 @@ class Ecosystem:
         self.iter += 1
         self.calendar += 1
 
+        if self.iter % self.plot_iter == 0:
+            self.visualize(save=True, show=False)
+
+        adult_lamprey = 0
+        larval_lamprey = 0
+        male_lamprey = 0
+        female_lamprey = 0
+
+        age_0_lamprey = 0
+        age_1_lamprey = 0
+        age_2_lamprey = 0
+        age_3_lamprey = 0
+        age_4_lamprey = 0
+        age_5_lamprey = 0
+        age_6_lamprey = 0
+        age_7_lamprey = 0
+
+        for row in range(self.width):
+            for col in range(self.height):
+                n_adult, n_larval, n_male, n_female = self.lamprey_world.describe(
+                    row, col
+                )
+                adult_lamprey += n_adult
+                larval_lamprey += n_larval
+                male_lamprey += n_male
+                female_lamprey += n_female
+
+                age_0_lamprey += self.lamprey_world[row][col][0]
+                age_1_lamprey += self.lamprey_world[row][col][1]
+                age_2_lamprey += self.lamprey_world[row][col][2]
+                age_3_lamprey += self.lamprey_world[row][col][3]
+                age_4_lamprey += self.lamprey_world[row][col][4]
+                age_5_lamprey += (
+                    self.lamprey_world[row][col][5][0]
+                    + self.lamprey_world[row][col][5][1]
+                )
+                age_6_lamprey += (
+                    self.lamprey_world[row][col][6][0]
+                    + self.lamprey_world[row][col][6][1]
+                )
+                age_7_lamprey += (
+                    self.lamprey_world[row][col][7][0]
+                    + self.lamprey_world[row][col][7][1]
+                )
+
+        n_prey = 0
+        for row in range(self.width):
+            for col in range(self.height):
+                n_prey += float(self.prey_world[row][col])
+
+        n_predator = 0
+        for row in range(self.width):
+            for col in range(self.height):
+                n_predator += float(self.predator_world[row][col])
+
+        self.info_dict["iter"].append(self.iter)
+        self.info_dict["n_lamprey"].append(adult_lamprey + larval_lamprey)
+        self.info_dict["n_prey"].append(n_prey)
+        self.info_dict["n_predator"].append(n_predator)
+        self.info_dict["n_adult_lamprey"].append(adult_lamprey)
+        self.info_dict["n_larval_lamprey"].append(larval_lamprey)
+        self.info_dict["n_male_lamprey"].append(male_lamprey)
+        self.info_dict["n_female_lamprey"].append(female_lamprey)
+        self.info_dict["0_age"].append(age_0_lamprey)
+        self.info_dict["1_age"].append(age_1_lamprey)
+        self.info_dict["2_age"].append(age_2_lamprey)
+        self.info_dict["3_age"].append(age_3_lamprey)
+        self.info_dict["4_age"].append(age_4_lamprey)
+        self.info_dict["5_age"].append(age_5_lamprey)
+        self.info_dict["6_age"].append(age_6_lamprey)
+        self.info_dict["7_age"].append(age_7_lamprey)
+
     def visualize(
         self, save: bool = False, show: bool = True, filename: Union[str, Path] = None
     ):
@@ -123,7 +218,8 @@ class Ecosystem:
             return
 
         if filename is None:
-            filename = f"{self.iter}.png"
+            vector_filename = f"{self.iter}.eps"
+            bitmap_filename = f"{self.iter}.png"
 
         # prey_data = np.array(self.prey_world.matrix)
         # predator_data = np.array(self.predator_world.matrix)
@@ -210,39 +306,84 @@ class Ecosystem:
         prey_normalized = norm(prey_data_pooled) * 255
         predator_normalized = norm(predator_data_pooled) * 255
 
-        # sns.heatmap(
-        #     male_percentage_data_pooled,
-        #     ax=self.axes[0][0],
-        #     square=True,
-        #     cmap="coolwarm",
-        #     center=1,
-        #     # cbar_kws={"label": "Sex Ratio (Males/Females)"},
-        # )
-        self.axes[0][0].imshow(
-            male_percentage_normalized,
-            cmap="viridis",
+        mp_fig, mp_ax = plt.subplots()
+        sns.heatmap(
+            male_percentage_data_pooled,
+            ax=mp_ax,
+            square=True,
+            cmap="coolwarm",
+            center=1,
+            linewidths=1,
+            linecolor="black",
+            # cbar_kws={"label": "Sex Ratio (Males/Females)"},
         )
-        self.axes[0][0].set_title("Male Percentage")
-        self.axes[0][0].set_axis_off()
+        mp_ax.set_title("Lamprey MP")
 
-        self.axes[0][1].imshow(larval_adult_ratio_normalized, cmap="binary")
-        self.axes[0][1].set_title("Larval/Adult Ratio")
-        self.axes[0][1].set_axis_off()
+        lamprey_distribution_fig, lamprey_distribution_ax = plt.subplots()
+        sns.heatmap(
+            larval_adult_ratio_data_pooled,
+            ax=lamprey_distribution_ax,
+            square=True,
+            cmap="coolwarm",
+            center=1,
+            linewidths=1,
+            linecolor="black",
+            # cbar_kws={"label": "Larval/Adult Ratio"},
+        )
+        lamprey_distribution_ax.set_title("Lamprey Dist")
 
-        self.axes[1][0].imshow(prey_normalized, cmap="PuBu")
-        self.axes[1][0].set_title("Prey World")
-        self.axes[1][0].set_axis_off()
+        prey_distribution_fig, prey_distribution_ax = plt.subplots()
+        sns.heatmap(
+            prey_data_pooled,
+            ax=prey_distribution_ax,
+            square=True,
+            cmap="Greens",
+            linewidths=1,
+            linecolor="black",
+            # cbar_kws={"label": "Prey Density"},
+        )
+        prey_distribution_ax.set_title("Prey Dist")
 
-        self.axes[1][1].imshow(predator_normalized, cmap="PuBu")
-        self.axes[1][1].set_title("Predator World")
-        self.axes[1][1].set_axis_off()
+        predator_distribution_fig, predator_distribution_ax = plt.subplots()
+        sns.heatmap(
+            predator_data_pooled,
+            ax=predator_distribution_ax,
+            square=True,
+            cmap="Reds",
+            linewidths=1,
+            linecolor="black",
+            # cbar_kws={"label": "Predator Density"},
+        )
+        predator_distribution_ax.set_title("Predator Dist")
 
         if save:
-            self.fig.savefig(str(self.output_dir / filename))
+            mp_fig.savefig(str(self.output_lamprey_dir / ("MP" + vector_filename)))
+            # self.fig.savefig(str(self.output_dir / filename))
+            lamprey_distribution_fig.savefig(
+                str(self.output_lamprey_dir / ("LampD" + vector_filename))
+            )
+            prey_distribution_fig.savefig(
+                str(self.output_prey_dir / ("PreyD" + vector_filename))
+            )
+            predator_distribution_fig.savefig(
+                str(self.output_predator_dir / ("PredD" + vector_filename))
+            )
+
+            mp_fig.savefig(str(self.output_lamprey_dir / ("MP" + bitmap_filename)))
+            # self.fig.savefig(str(self.output_dir / filename))
+            lamprey_distribution_fig.savefig(
+                str(self.output_lamprey_dir / ("LampD" + bitmap_filename))
+            )
+            prey_distribution_fig.savefig(
+                str(self.output_prey_dir / ("PreyD" + bitmap_filename))
+            )
+            predator_distribution_fig.savefig(
+                str(self.output_predator_dir / ("PredD" + bitmap_filename))
+            )
 
         if show:
             plt.pause(0.1)
-
+        plt.close()
         return
 
     def save_metrics(self):
@@ -272,7 +413,11 @@ class Ecosystem:
         plt.plot(metrics["prey_density"], label="Prey Density")
         plt.plot(metrics["predator_density"], label="Predator Density")
         plt.legend()
-        plt.savefig(str(self.output_dir / "metrics.png"))
+        fig.suptitle("Ecosystem Metrics")
+        plt.xlabel("Iteration (Month)")
+        plt.ylabel("Density")
+
+        fig.savefig(str(self.output_dir / "metrics.png"))
         plt.show()
 
     @classmethod

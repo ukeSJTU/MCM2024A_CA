@@ -1,5 +1,6 @@
 from typing import Callable, List, Union, TYPE_CHECKING
 import random
+import math
 import copy
 from utils import softmax, timer, calculate_male_percentage
 from species import LampreySpecies, PreySpecies
@@ -92,16 +93,18 @@ def action_lamprey_increase_age(ecosystem: "Ecosystem"):
                     male_percentage = calculate_male_percentage(
                         value=ecosystem.prey_world[row][col].content, use_random=True
                     )
+                    # print(f"MP: {male_percentage} for {row}, {col}")
                     # if ecosystem.prey_world[row][col] >= 245:
                     #     sex_ratio = 0.56 * random.uniform(0.95, 1.05)
                     # else:
                     #     sex_ratio = 0.78 * random.uniform(0.95, 1.05)
-                    ecosystem.lamprey_world[row][col][5][0] = int(
+                    ecosystem.lamprey_world[row][col][5][0] = math.ceil(
                         ecosystem.lamprey_world[row][col][4] * male_percentage
                     )
-                    ecosystem.lamprey_world[row][col][5][1] = int(
+                    ecosystem.lamprey_world[row][col][5][1] = math.ceil(
                         ecosystem.lamprey_world[row][col][4] * (1 - male_percentage)
                     )
+            ecosystem.lamprey_world[row][col][0] = 0
     ecosystem.debug(1)
 
 
@@ -127,18 +130,23 @@ def action_lamprey_spawn_and_die(ecosystem: "Ecosystem"):
                 * (1 - MP)
                 * adult_cnt
                 * adult_cnt
+                * 0.000001
             )
             # put the ecosystem.prey_world[x][y] at the front of the equation
             # becuase we only implement * operator for PreySpecies * int or PreySpecies * float
-            # print(f"MP: {MP}, s: {s}, prey: {ecosystem.prey_world[row][col]}")
-            ecosystem.lamprey_world[row][col][0] += s
+            print(f"MP: {MP}, s: {s}, prey: {ecosystem.prey_world[row][col]}")
+            print(f"Before: {ecosystem.lamprey_world[row][col][0]}")
+            ecosystem.lamprey_world[row][col][0] = (
+                ecosystem.lamprey_world[row][col][0] + s
+            )
+            print(f"After: {ecosystem.lamprey_world[row][col][0]}")
 
             # then we proportionally minus the number of adult lampreys fromage over 5, because mated lampreys die after reproduce
 
             for age in [5, 6, 7]:
                 for sex in [0, 1]:
-                    ecosystem.lamprey_world[row][col][age][sex] = int(
-                        0.4
+                    ecosystem.lamprey_world[row][col][age][sex] = math.ceil(
+                        0.9
                         * ecosystem.lamprey_world[row][col][age][
                             sex
                         ]  #! 0.4 is randomly picked
@@ -195,20 +203,20 @@ def action_lamprey_predated(ecosystem: "Ecosystem"):
 def action_lamprey_death(ecosystem: "Ecosystem"):
     for row in range(ecosystem.height):
         for col in range(ecosystem.width):
-            for age in range(7, 0, -1):
+            for age in range(7, -1, -1):
                 # adult has a death rate of 40% and larval death rate is 60%
                 if age <= 4:
-                    ecosystem.lamprey_world[row][col][age] = int(
+                    ecosystem.lamprey_world[row][col][age] = math.ceil(
                         ecosystem.lamprey_world[row][col][age]
                         * (1 - ecosystem.lamprey_world.larval_death_rate)
                     )
                 else:
-                    ecosystem.lamprey_world[row][col][age][0] = int(
+                    ecosystem.lamprey_world[row][col][age][0] = math.ceil(
                         ecosystem.lamprey_world[row][col][age][0]
                         * (1 - ecosystem.lamprey_world.male_death_rate)
                     )
 
-                    ecosystem.lamprey_world[row][col][age][1] = int(
+                    ecosystem.lamprey_world[row][col][age][1] = math.ceil(
                         ecosystem.lamprey_world[row][col][age][1]
                         * (1 - ecosystem.lamprey_world.female_death_rate)
                     )
@@ -366,6 +374,30 @@ def action_adult_lamprey_migration(ecosystem: "Ecosystem"):
                         ecosystem.lamprey_world[row][col][age][sex] -= n_migration
 
 
+def action_lamprey_increase_age_with_even_sex_ratio(ecosystem: "Ecosystem"):
+    for row in range(ecosystem.height):
+        for col in range(ecosystem.width):
+            for age in range(7, 0, -1):
+                if age != 5:
+                    # print("Before:", ecosystem.lamprey_world[row][col][age])
+                    # increase the age of every lamprey
+                    ecosystem.lamprey_world[row][col][age] = copy.deepcopy(
+                        ecosystem.lamprey_world[row][col][age - 1]
+                    )
+                    # print("After", ecosystem.lamprey_world[row][col][age])
+
+                # 4-year-old becomes adult
+                else:
+                    male_percentage = 0.5
+                    ecosystem.lamprey_world[row][col][5][0] = int(
+                        ecosystem.lamprey_world[row][col][4] * male_percentage
+                    )
+                    ecosystem.lamprey_world[row][col][5][1] = int(
+                        ecosystem.lamprey_world[row][col][4] * (1 - male_percentage)
+                    )
+    ecosystem.debug(1)
+
+
 # Rule 1: when month is 3, every lamprey grows up by 1 year and the 4-year-old larval lampreys grow into adult lampreys
 # PS: we assume that every lamprey lives 7 years. The first 4 years are larval lampreys, the last 3 years are adult lampreys
 #     here, we handle the case of metamorphosis
@@ -377,7 +409,7 @@ rule_grow_older = Rule(
 
 # Rule 2: when month is between 3-7, adult lampreys spawn and die
 rule_lamprey_spawn_and_die = Rule(
-    condition=condition_which_month([3, 4, 5, 6, 7]),
+    condition=condition_which_month([5]),
     action=action_lamprey_spawn_and_die,
     description="Adult lampreys spawn and die",
 )
@@ -437,6 +469,12 @@ rule_prey_reproduce = Rule(
     condition=condition_which_month([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
     action=action_prey_reproduce,
     description="Prey world reproduces",
+)
+
+rule_grow_older_even = Rule(
+    condition=condition_which_month(3),
+    action=action_lamprey_increase_age_with_even_sex_ratio,
+    description="All lampreys grow older and the sex ratio is 1:1",
 )
 
 rulesets = RuleSet(

@@ -70,6 +70,9 @@ class LampreyWorld(World):
         init_sex_ratio,
         width=100,
         height=100,
+        larval_death_rate: float = 0.5 / 12,
+        male_death_rate: float = 0.2 / 12,
+        female_death_rate: float = 0.2 / 12,
     ):
         super().__init__(width, height)
         # each element of the matrix of LampryWorld is a LampreyPop object
@@ -97,9 +100,9 @@ class LampreyWorld(World):
         self.male_cnt = int(init_sex_ratio * self.adult_cnt)
         self.female_cnt = self.adult_cnt - self.male_cnt
 
-        self.larval_death_rate = 0.5 / 12
-        self.male_death_rate = 0.2 / 12
-        self.female_death_rate = 0.2 / 12
+        self.larval_death_rate = larval_death_rate
+        self.male_death_rate = male_death_rate
+        self.female_death_rate = female_death_rate
 
     def show(self, save=False, show=False, filename="output.png"):
         fig, ax = plt.subplots(1, 1, figsize=(5, 5))
@@ -230,6 +233,7 @@ class PredatorWorld(World):
         ]
 
         self.birth_rate = 2  # the birth rate of the prey of lampreys
+        self.prey_rate = prey_rate
 
     def show(self, save=False, show=False, filename="output.png"):
         fig, ax = plt.subplots(1, 1, figsize=(5, 5))
