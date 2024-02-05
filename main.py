@@ -68,7 +68,8 @@ def main():
     N_ITER = 24
 
     POOLING = "max"  # or "mean", the pooling strategy for ecosystem visualization
-    POOL_SIZE = 10  # 0.1 * WORLD_WIDTH
+    POOL_WIDTH_SIZE = 10  # 0.1 * WORLD_WIDTH
+    POOL_HEIGHT_SIZE = 10  # 0.1 * WORLD_HEIGHT
 
     # Create the lamprey world
     init_lamprey = LampreySpecies()
@@ -122,6 +123,8 @@ def main():
         prey_world=prey_world,
         predator_world=predator_world,
         terrain=terrain,
+        pool_size=(POOL_WIDTH_SIZE, POOL_HEIGHT_SIZE),
+        pool_method=POOLING,
     )
 
     n_iter = N_ITER

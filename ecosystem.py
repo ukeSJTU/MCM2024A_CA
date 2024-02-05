@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 from pathlib import Path
 import random
-from typing import Union, Literal
+from typing import Union, Literal, Tuple
 import time
 from pathlib import Path
 import copy
@@ -33,7 +33,7 @@ class Ecosystem:
         prey_world: PreyWorld,
         predator_world: PredatorWorld,
         terrain: Terrain,
-        pool_size: int = 10,
+        pool_size: Tuple[int, int],
         pool_method: Literal["max", "mean"] = "max",
         output_dir: Path = Path("./output") / str(int(time.time())),
         calendar: Calendar = Calendar(2000, 1),
@@ -157,7 +157,7 @@ class Ecosystem:
         # pool_size = 10  # Adjust based on desired granularity
         male_percentage_data_pooled = resize_with_pooling(
             data=male_percentage_data,
-            new_size=(self.pool_size, self.pool_size),
+            new_size=self.pool_size,
             method=self.pool_method,
         )
         male_percentage_mask = np.isnan(male_percentage_data_pooled)
@@ -167,20 +167,20 @@ class Ecosystem:
 
         larval_adult_ratio_data_pooled = resize_with_pooling(
             data=larval_adult_ratio_data,
-            new_size=(self.pool_size, self.pool_size),
+            new_size=self.pool_size,
             method=self.pool_method,
         )
         larval_adult_ratio_mask = np.isnan(larval_adult_ratio_data_pooled)
 
         prey_data_pooled = resize_with_pooling(
             prey_data,
-            new_size=(self.pool_size, self.pool_size),
+            new_size=self.pool_size,
             method=self.pool_method,
         )  # or 'mean'
 
         predator_data_pooled = resize_with_pooling(
             predator_data,
-            new_size=(self.pool_size, self.pool_size),
+            new_size=self.pool_size,
             method=self.pool_method,
         )
 
